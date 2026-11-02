@@ -209,8 +209,7 @@ body.focus .desk, body.brain .desk { opacity: 0; pointer-events: none; }
 body.focus .desk > .widget, body.brain .desk > .widget { pointer-events: none; }
 .widget { padding: 6px 4px; border-radius: 16px; background: none; border: 0; box-shadow: none; box-sizing: border-box;
           text-shadow: 0 1px 12px rgba(0,0,0,0.7); }
-.widget.essential { padding: 14px 16px; background: rgba(4,10,20,0.42); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-                    box-shadow: 0 0 0 1px rgba(var(--tone, 41,224,255),0.22) inset; text-shadow: none; }
+.widget.essential { padding: 14px 16px; }
 .widget.enter { animation: w-in 0.55s cubic-bezier(.2,.8,.2,1) both; }
 .widget.leave { animation: w-out 0.45s ease both; }
 .widget.dragging { transition: none !important; z-index: 6; cursor: grabbing; opacity: 0.92; }

@@ -1,4 +1,4 @@
-.w-alarm { background: radial-gradient(ellipse at 50% 46%, rgba(var(--tone), 0.18), rgba(4, 10, 20, 0.55) 68%); }
+.w-alarm { background: none; }
 .w-alarm .w-body { container-type: size; display: flex; flex-direction: column; height: 100%; min-height: 300px; overflow: hidden; box-sizing: border-box; }
 .w-alarm .al-core { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(4px, 2cqh, 12px); text-align: center; padding: 0 20px clamp(8px, 4cqh, 28px); min-height: 0; }
 .w-alarm .al-mark { position: relative; display: grid; place-items: center; width: clamp(64px, 28cqh, 190px); aspect-ratio: 1; margin-bottom: clamp(2px, 2cqh, 12px); }

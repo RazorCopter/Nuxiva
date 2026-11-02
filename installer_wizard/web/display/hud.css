@@ -90,7 +90,7 @@
 .wk-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
 
 @keyframes wk-blink { 50% { opacity: 0.3; } }
-@keyframes wk-breathe { 50% { box-shadow: 0 0 0 1px rgba(var(--tone), 0.45) inset, 0 0 34px rgba(var(--tone), 0.18); } }
+@keyframes wk-breathe { 50% { text-shadow: 0 0 18px rgba(var(--tone), 0.55), 0 1px 2px rgba(2, 6, 14, 0.9); } }
 .widget.essential.urgent { animation: wk-breathe 2.8s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
   .wk-chip.live::before, .widget.essential.urgent { animation: none; }
