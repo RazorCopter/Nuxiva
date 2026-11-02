@@ -10,6 +10,8 @@ const colocatedModules = (import.meta as any).glob(
   { eager: true }
 );
 
+const PLACEHOLDER = /\{\{\s*([A-Za-z0-9_]+)\s*\}\}|\{([A-Za-z0-9_]+)\}/g;
+
 const dictionaryCache: Record<string, Record<string, Record<string, string>>> = Object.create(null);
 
 function registerScopeDict(scopeKey: string, lang: string, dict: Record<string, string>) {
@@ -134,12 +136,12 @@ export function useScopedI18n(scope: string) {
     (key: string, params?: Record<string, string | number>): string => {
       const prefix = (scope.split('/').pop() || scope) + '.';
       const localKey = key.startsWith(prefix) ? key.slice(prefix.length) : key;
-      let text = dictionaryText(activeDictionary, key) ?? dictionaryText(activeDictionary, localKey) ?? dictionaryText(fallbackDictionary, key) ?? dictionaryText(fallbackDictionary, localKey) ?? key;
+      const text = dictionaryText(activeDictionary, key) ?? dictionaryText(activeDictionary, localKey) ?? dictionaryText(fallbackDictionary, key) ?? dictionaryText(fallbackDictionary, localKey) ?? key;
       const merged: Record<string, string | number> = { assistant, ...params };
-      Object.entries(merged).forEach(([k, v]) => {
-        text = text.split(`{${k}}`).join(String(v));
+      return text.replace(PLACEHOLDER, (match: string, double?: string, single?: string) => {
+        const name = double ?? single ?? '';
+        return Object.prototype.hasOwnProperty.call(merged, name) ? String(merged[name]) : match;
       });
-      return text;
     },
     [activeDictionary, fallbackDictionary, assistant, scope]
   );

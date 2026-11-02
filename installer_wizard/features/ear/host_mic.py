@@ -331,6 +331,9 @@ class HostMicCapture:
                     raise
                 except (OSError, RuntimeError, ValueError) as exc:
                     log.warning("Errore cattura host mic (%s): %s", cmd[0], exc)
+                except Exception:
+                    log.exception("Errore nell'elaborazione dell'audio del microfono del computer (%s)", cmd[0])
+                    self._teardown_session()
                 finally:
                     await self._stop_process()
                 elapsed = time.time() - start_time

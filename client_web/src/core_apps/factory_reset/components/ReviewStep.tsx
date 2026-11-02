@@ -4,6 +4,11 @@ import { Btn, Empty, formatBytes, Panel, Pill, Stat, StatRow, Toggle } from '../
 import { createBackup, reasonCode } from '../api';
 import { ResetInventory, ResetOptions, Translate } from '../types';
 
+const OPTION_ROWS: ReadonlyArray<{ readonly key: keyof ResetOptions; readonly text: string }> = [
+  { key: 'keepBackups', text: 'option_keep_backups' },
+  { key: 'includeShares', text: 'option_shares' },
+];
+
 interface Props {
   readonly inventory: ResetInventory;
   readonly options: ResetOptions;
@@ -62,8 +67,12 @@ export const ReviewStep: React.FC<Props> = ({ inventory, options, onOptions, onC
       </Panel>
       <Panel title={t('options_title')}>
         <div className="grid gap-3">
-          <Toggle checked={options.keepBackups} onChange={(value) => onOptions({ ...options, keepBackups: value })} label={t('option_keep_backups')} />
-          <Toggle checked={options.includeShares} onChange={(value) => onOptions({ ...options, includeShares: value })} label={t('option_shares')} />
+          {OPTION_ROWS.map(({ key, text }) => (
+            <div key={key} className="flex items-center justify-between gap-3 text-sm text-slate-800">
+              <span>{t(text)}</span>
+              <Toggle checked={options[key]} onChange={(value) => onOptions({ ...options, [key]: value })} label={t(text)} />
+            </div>
+          ))}
           <p className="text-xs text-slate-500">{t('keeps_note')}</p>
         </div>
       </Panel>

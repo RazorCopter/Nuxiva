@@ -5,6 +5,8 @@ import time
 
 import httpx
 
+import ear_probe
+
 from config import CORE_URL, STATE_DIR, kiosk_log, ollama_remote, ollama_url, read_env
 from state import store
 
@@ -208,7 +210,7 @@ async def probe_all() -> dict:
             if log_lines:
                 results["ear"]["detail"] += " · registro: " + " | ".join(log_lines)
         except (OSError, asyncio.TimeoutError):
-            results["ear"] = {"status": "down", "detail": "Servizio non raggiungibile"}
+            results["ear"] = await ear_probe.diagnose(sh)
 
     if env.get("NUXIVA_VISION", "1") == "0":
         results["vision"] = {"status": "ok", "detail": "Disabilitata"}
@@ -329,10 +331,8 @@ class Watchdog:
         elif key == "ear" and store.components.get("ear", {}).get("mic"):
             await self._heal_mic(count)
         elif key == "ear":
-            if count <= 2:
-                await sh("systemctl", "restart", "nuxiva-ear", timeout=60)
-            else:
-                await self.orch.converge(["ear"], reason="Ripristino dell'ascolto vocale")
+            await ear_probe.recover(sh, lambda: self.orch.converge(["ear"], reason="Ripristino dell'ascolto vocale"),
+                                    comp, count)
         elif key == "vision":
             if count <= 2:
                 await sh("systemctl", "restart", "nuxiva-vision", timeout=60)
@@ -378,7 +378,7 @@ class Watchdog:
                     self.gave_up.discard(key)
                     continue
                 comp["failures"] = comp.get("failures", 0) + 1
-                if comp["failures"] >= 2 or key == "llm":
+                if (comp["failures"] >= 2 or key == "llm") and not res.get("starting"):
                     broken.append(key)
 
             critical_down = [k for k in broken if k in CRITICAL and results[k]["status"] == "down"]

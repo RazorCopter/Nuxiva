@@ -3,6 +3,7 @@
   const FALLBACK = "en";
   const CONFIG_URL = "/api/v2/brain/config";
   const POLL_MS = 4000;
+  const DOCK_GAP = 16;
   const root = document.createElement("section");
   const button = document.createElement("button");
   const dot = document.createElement("i");
@@ -37,6 +38,12 @@
   button.append(dot, name, free);
   root.append(popover, button);
   document.body.append(root);
+
+  const publishClearance = () => {
+    const box = button.getBoundingClientRect();
+    const clearance = root.hidden || !box.width ? 0 : Math.ceil(window.innerWidth - box.left) + DOCK_GAP;
+    document.documentElement.style.setProperty("--brain-badge-w", `${Math.max(DOCK_GAP, clearance)}px`);
+  };
 
   const language = () => {
     const candidate = (document.documentElement.lang || FALLBACK).slice(0, 2).toLowerCase();
@@ -127,6 +134,7 @@
     button.setAttribute("aria-expanded", String(opened));
     popover.hidden = !opened;
     root.hidden = !visible;
+    publishClearance();
   }
 
   const poll = async () => {
@@ -161,6 +169,8 @@
     freeRoute = event.detail || null;
     render();
   });
+  if ("ResizeObserver" in window) new ResizeObserver(publishClearance).observe(button);
+  window.addEventListener("resize", publishClearance, { passive: true });
   document.addEventListener("visibilitychange", () => !document.hidden && void poll());
   new MutationObserver(() => void loadLanguage()).observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
   void loadLanguage();

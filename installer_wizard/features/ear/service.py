@@ -30,6 +30,8 @@ from voiceprint import ENROLLED_AT, Voiceprints
 from wakeword import WakeWord
 from autolevel import AutoLevel
 from host_mic import HostMicCapture
+from keepalive import supervise
+from link_state import LINK, note_error, save_link
 
 log = logging.getLogger("nuxiva.ear")
 
@@ -47,19 +49,7 @@ BARGE_IN = float(os.environ.get("NUXIVA_BARGE_IN", "0.7"))
 
 voiceprints = Voiceprints()
 governor = LiveGovernor()
-LINK_FILE = os.environ.get("NUXIVA_EAR_LINK", "/var/lib/nuxiva/ear_link.json")
 HOST_MIC: HostMicCapture | None = None
-LINK = {"clients": 0, "last_audio": 0.0, "level": 0.0, "since": time.time(), "pages": []}
-
-
-def save_link() -> None:
-    try:
-        tmp = LINK_FILE + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as f:
-            json.dump({**LINK, "at": time.time()}, f)
-        os.replace(tmp, LINK_FILE)
-    except OSError as exc:
-        log.debug("Stato del collegamento non salvato: %s", exc)
 
 
 async def link_writer() -> None:
@@ -442,13 +432,6 @@ class Session:
             await self.set_mode("idle")
 
 
-def note_error(where: str, exc: Exception) -> None:
-    text = f"{where}: {type(exc).__name__}: {exc}"[:240]
-    if LINK.get("error") != text:
-        log.exception("Errore nell'ascolto (%s)", where)
-    LINK["error"], LINK["error_at"] = text, time.time()
-
-
 async def handler(ws) -> None:
     try:
         session = Session(ws)
@@ -495,7 +478,9 @@ async def main() -> None:
     reviewer = Reviewer(lambda: any(s.mode != "idle" or s.in_speech or s.nuxiva_speaking for s in SESSIONS))
     HOST_MIC = host_mic = HostMicCapture(Session)
     async with websockets.serve(handler, "127.0.0.1", PORT, max_size=2 ** 20, ping_interval=20, ping_timeout=90):
-        await asyncio.gather(link_writer(), reviewer.run(), capture.maintenance(), feedback.run(voiceprints), host_mic.run())
+        await asyncio.gather(supervise("stato", link_writer), supervise("revisione", reviewer.run),
+                             supervise("registro", capture.maintenance), supervise("feedback", lambda: feedback.run(voiceprints)),
+                             supervise("microfono del computer", host_mic.run))
 
 
 if __name__ == "__main__":

@@ -2,9 +2,86 @@
 . "$(dirname "$0")/../lib.sh"
 
 BT_PKGS=(bluez pulseaudio-module-bluetooth)
+BT_FIRMWARE=(firmware-realtek firmware-iwlwifi firmware-atheros firmware-brcm80211 firmware-mediatek firmware-misc-nonfree linux-firmware)
+BT_DRIVER_RE='^(btusb|btsdio|hci_uart|btmtksdio|btnxpuart)$'
 
 bt_enabled() { [ "${NUXIVA_BLUETOOTH:-1}" != "0" ]; }
 bt_adapter() { compgen -G "/sys/class/bluetooth/hci*" >/dev/null; }
+bt_controller() { timeout 8 bluetoothctl list 2>/dev/null | grep -q '^Controller '; }
+
+bt_rfkill() {
+    local dev
+    for dev in /sys/class/rfkill/rfkill*; do
+        [ "$(cat "$dev/type" 2>/dev/null)" = bluetooth ] || continue
+        [ "$(cat "$dev/$1" 2>/dev/null)" = 1 ] && return 0
+    done
+    return 1
+}
+
+bt_unblock() {
+    local dev
+    rfkill unblock bluetooth 2>/dev/null && return 0
+    for dev in /sys/class/rfkill/rfkill*; do
+        [ "$(cat "$dev/type" 2>/dev/null)" = bluetooth ] && { echo 0 > "$dev/soft"; } 2>/dev/null || true
+    done
+    return 0
+}
+
+bt_driver() {
+    local link drv
+    for link in /sys/class/bluetooth/hci*/device/driver; do
+        [ -e "$link" ] || continue
+        drv=$(basename "$(readlink -f "$link")")
+        [[ "$drv" =~ $BT_DRIVER_RE ]] && { echo "$drv"; return 0; }
+    done
+    return 1
+}
+
+bt_kernel_report() {
+    dmesg 2>/dev/null | grep -iE 'bluetooth|hci[0-9]|btusb|btrtl|btintel|btmtk' | grep -iE 'fail|error|timeout|firmware|not found' \
+        | tail -n 4 | sed 's/^/[bluetooth] /'
+}
+
+bt_firmware() {
+    local wanted=() pkg
+    for pkg in "${BT_FIRMWARE[@]}"; do
+        pkgs_present "$pkg" && continue
+        apt-cache show "$pkg" >/dev/null 2>&1 && wanted+=("$pkg")
+    done
+    [ ${#wanted[@]} -gt 0 ] || return 1
+    detail "Firmware dell'adattatore: ${wanted[*]}"
+    apt_install "${wanted[@]}"
+}
+
+bt_reload_driver() {
+    local drv
+    drv=$(bt_driver) || return 1
+    detail "Ricarico il driver $drv"
+    modprobe -r "$drv" 2>/dev/null || return 1
+    sleep 2
+    modprobe "$drv" 2>/dev/null || return 1
+    wait_for 15 bt_adapter
+}
+
+bt_restart_service() {
+    systemctl reset-failed bluetooth >/dev/null 2>&1 || true
+    systemctl restart bluetooth >/dev/null 2>&1 || return 1
+    wait_for 12 bt_controller
+}
+
+bt_recover() {
+    bt_controller && return 0
+    warn "L'adattatore Bluetooth non risponde: provo a riattivarlo"
+    bt_unblock
+    bt_restart_service && return 0
+    if bt_firmware; then
+        bt_reload_driver
+        bt_restart_service && return 0
+    fi
+    bt_reload_driver && bt_unblock && bt_restart_service && return 0
+    bt_kernel_report
+    return 1
+}
 
 kiosk_pactl() {
     local uid
@@ -45,10 +122,20 @@ step_apply() {
             printf '\n[Policy]\nAutoEnable=true\n' >> /etc/bluetooth/main.conf
         fi
     fi
-    rfkill unblock bluetooth 2>/dev/null || true
+    bt_unblock
+    systemctl unmask bluetooth >/dev/null 2>&1 || true
     systemctl enable --now bluetooth || fail "Servizio Bluetooth non avviato"
-    wait_for 20 bluetoothctl show || fail "Adattatore Bluetooth non risponde"
-    bluetoothctl power on >/dev/null || warn "Accensione dell'adattatore non confermata"
+    if bt_rfkill hard; then
+        warn "Bluetooth spento dall'interruttore del computer (tasto modalità aereo o BIOS)"
+        progress 100 "Bluetooth spento dall'interruttore del computer: riaccendilo e Nuxiva lo attiverà"
+        return 0
+    fi
+    if ! wait_for 20 bt_controller && ! bt_recover; then
+        warn "L'adattatore Bluetooth non ha risposto neanche dopo la riparazione: il resto di Nuxiva funziona normalmente"
+        progress 100 "Adattatore Bluetooth non pronto: si accenderà da solo appena risponde, anche dopo un riavvio"
+        return 0
+    fi
+    timeout 8 bluetoothctl power on >/dev/null 2>&1 || warn "Accensione dell'adattatore non confermata"
     progress 75 "Permessi per il display"
     getent group bluetooth >/dev/null || groupadd --system bluetooth
     if id "$NUXIVA_KIOSK_USER" >/dev/null 2>&1; then

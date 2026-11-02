@@ -18,10 +18,16 @@ if str(_dir) not in sys.path:
 
 try:
     import embeddings as emb
-    import sealed_rows
 except ImportError:
     from features.biometrics import embeddings as emb
-    from features.biometrics import sealed_rows
+
+try:
+    import sealed_rows
+except ImportError as exc:
+    sealed_rows = None
+    SEAL_MISSING = str(exc)
+else:
+    SEAL_MISSING = ""
 
 try:
     import earconf
@@ -76,6 +82,9 @@ class Voiceprints:
         self.stamp = 0.0
         if os.environ.get("NUXIVA_VOICEPRINT", "1") == "0" or not MODEL.exists():
             log.info("Impronta vocale non disponibile su questo sistema")
+            return
+        if sealed_rows is None:
+            log.warning("Impronta vocale spenta: cifratura non disponibile (%s)", SEAL_MISSING)
             return
         try:
             import sherpa_onnx
@@ -187,7 +196,7 @@ class Voiceprints:
         return own >= self.limits.get(slug, match_base()) - LEARN_SLACK and result["best"] in (slug, None)
 
     def add(self, slug: str, probe: np.ndarray, source: str) -> int:
-        if not _SLUG.match(slug) or probe is None:
+        if sealed_rows is None or not _SLUG.match(slug) or probe is None:
             return 0
         path = STORE / f"{slug}.npy"
         try:
