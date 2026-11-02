@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 import time
 from datetime import datetime, timedelta, timezone
 
@@ -128,6 +129,26 @@ DAILY = (
 )
 
 
+INTERVAL = {"steps": "interval.start_time", "sleep": "interval.end_time"}
+DAILY_TYPES = {"daily-resting-heart-rate"}
+TYPE_NAME = re.compile(r"^[a-z][a-z-]{1,40}$")
+
+
+def _rfc3339(at: datetime) -> str:
+    return at.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def query(data_type: str, start: datetime, end: datetime) -> str:
+    if not TYPE_NAME.match(data_type):
+        raise ValueError("Tipo di dato Google Health non valido")
+    name = data_type.replace("-", "_")
+    if data_type in DAILY_TYPES:
+        first, last = start.date().isoformat(), (end.date() + timedelta(days=1)).isoformat()
+        return f'{name}.date >= "{first}" AND {name}.date < "{last}"'
+    field = f"{name}.{INTERVAL.get(data_type, 'sample_time.physical_time')}"
+    return f'{field} >= "{_rfc3339(start)}" AND {field} < "{_rfc3339(end)}"'
+
+
 FATAL = {"api_disabled", "health_profile_missing", "scope_missing", "unauthorized"}
 
 
@@ -176,9 +197,8 @@ async def poll(slug: str, now: float | None = None) -> int:
         end = datetime.fromtimestamp(now, timezone.utc)
         added, error = 0, ""
         for data_type, key, field, metric, scale, window in SOURCES if session.ready(SERVICE) else ():
-            params = {"startTime": (end - window).strftime("%Y-%m-%dT%H:%M:%SZ"), "endTime": end.strftime("%Y-%m-%dT%H:%M:%SZ")}
             try:
-                body = await session._get(f"{BASE}/{data_type}/dataPoints", **params)
+                body = await session._get(f"{BASE}/{data_type}/dataPoints", filter=query(data_type, end - window, end))
             except (httpx.HTTPError, ValueError) as exc:
                 error = _reason(exc)
                 log.info("Google Health %s non letto: %s", data_type, exc)
@@ -189,9 +209,8 @@ async def poll(slug: str, now: float | None = None) -> int:
         for data_type, service, window, parse in DAILY:
             if not session.ready(service):
                 continue
-            params = {"startTime": (end - window).strftime("%Y-%m-%dT%H:%M:%SZ"), "endTime": end.strftime("%Y-%m-%dT%H:%M:%SZ")}
             try:
-                body = await session._get(f"{BASE}/{data_type}/dataPoints", **params)
+                body = await session._get(f"{BASE}/{data_type}/dataPoints", filter=query(data_type, end - window, end))
             except (httpx.HTTPError, ValueError) as exc:
                 error = error or _reason(exc)
                 log.info("Google Health %s non letto: %s", data_type, exc)
