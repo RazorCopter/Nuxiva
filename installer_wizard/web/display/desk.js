@@ -216,6 +216,7 @@
     });
   }
   const PIN_GAP = 14;
+  const VOICE_ONLY = 0.2;
   const hits = (a, b) => a.x < b.x + b.w + PIN_GAP && a.x + a.w + PIN_GAP > b.x && a.y < b.y + b.h + PIN_GAP && a.y + a.h + PIN_GAP > b.y;
   function clearSpot(want, blocked, box) {
     if (!blocked.some((b) => hits(want, b))) {
@@ -390,7 +391,8 @@
       zone = { x: free.x + free.w * 0.05, y: free.y + free.h * 0.09, w: free.w * 0.9, h: free.h * 0.82 };
     }
 
-    if (!takeover && zone && !blocked.length && !covers(normal, W, H)) zone = null;
+    if (!takeover && zone && !covers(normal.concat(pinned), W, H)) zone = null;
+    if (zone && Math.min(zone.w, zone.h) < Math.min(W, H) * VOICE_ONLY) zone = { ...zone, voice: true };
     document.body.classList.toggle("desk-has", normal.length > 0 || !!takeover);
     document.body.classList.toggle("desk-alert", !!takeover);
     const stage = zone ? { ...zone, cx: zone.x + zone.w / 2, cy: zone.y + zone.h / 2 } : null;

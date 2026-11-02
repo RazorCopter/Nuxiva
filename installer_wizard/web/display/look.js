@@ -118,6 +118,7 @@
     if (avatar && avatar.setStage) avatar.setStage(stageZone);
     if (scene && scene !== avatar && scene.setStage) scene.setStage(stageZone);
     const root = document.documentElement.style;
+    if (D.setVoiceOnly) D.setVoiceOnly(!!(stageZone && stageZone.voice));
     if (stageZone) {
       root.setProperty("--av-x", `${stageZone.cx}px`);
       root.setProperty("--av-w", `${Math.max(260, stageZone.w)}px`);

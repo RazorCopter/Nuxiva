@@ -16,3 +16,4 @@
 @keyframes sp-blink { 50% { opacity: 0.35; } }
 @keyframes sp-sweep { from { background-position: -60% 0; } to { background-position: 160% 0; } }
 @media (prefers-reduced-motion: reduce) { .w-sync_pulse .sp-dot, .w-sync_pulse .wk-bar i { animation: none !important; } }
+.w-sync_pulse .wk-head { flex-wrap: wrap; row-gap: 2px; }

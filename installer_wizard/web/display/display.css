@@ -338,3 +338,11 @@ body.particles-on #particles { opacity: 1; }
 body.particles-on:not(.brain, .flow) #core { opacity: 0.22; transition: opacity 0.8s; }
 body:is(.brain, .flow, .focus, .desk-full, .desk-whiteboard) #particles { visibility: hidden; }
 body.satellite.particles-on .rest { opacity: 0; }
+#core, #scene { transition: opacity 0.9s ease, filter 0.9s ease; }
+body.voice-only #core, body.voice-only #scene { opacity: 0 !important; filter: blur(12px); }
+.voice-strip { position: fixed; left: 50%; bottom: calc(var(--av-bottom, 128px) + 64px); z-index: 21; display: flex; align-items: center; gap: 4px; height: 56px;
+               transform: translateX(-50%) scale(0.9); opacity: 0; pointer-events: none; transition: opacity 0.9s ease, transform 0.9s cubic-bezier(.2,.8,.2,1); }
+.voice-strip i { width: 4px; height: 100%; border-radius: 4px; background: linear-gradient(180deg, rgba(41,224,255,0.9), rgba(41,224,255,0.35));
+                 box-shadow: 0 0 10px rgba(41,224,255,0.55); transform: scaleY(0.08); transform-origin: center; }
+body.voice-only .voice-strip { opacity: 1; transform: translateX(-50%) scale(1); }
+@media (prefers-reduced-motion: reduce) { #core, #scene, .voice-strip { transition: none; } }
