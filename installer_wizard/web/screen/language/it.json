@@ -9,7 +9,15 @@
     "screen_label": "SCHERMO",
     "screen_n": "SCHERMO {{n}}",
     "mirror_label": "WIDGET DI {{assistant}}",
-    "idle_hint": "Trascina qui un widget dal bordo dell'altro schermo, oppure chiedi a {{assistant}} di spostarlo.",
-    "link_lost": "Riconnessione al supervisore"
+    "link_lost": "Riconnessione al supervisore",
+    "role_agent": "Assistente",
+    "role_work": "Lavoro",
+    "role_visual": "Visuale",
+    "screens_map": "Schermi collegati",
+    "pages_nav": "Pagine dei widget",
+    "page_of": "{{n}} / {{total}}",
+    "page_go": "Pagina {{n}}",
+    "page_prev": "Pagina precedente",
+    "page_next": "Pagina successiva"
   }
 }

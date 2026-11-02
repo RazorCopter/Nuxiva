@@ -338,4 +338,4 @@ body:has(#vol-panel.show) :is(.bgq, .setup-cta, .brain-route-host) { opacity: 0;
 body.particles-on #particles { opacity: 1; }
 body.particles-on:not(.brain, .flow) #core { opacity: 0.22; transition: opacity 0.8s; }
 body:is(.brain, .flow, .focus, .desk-full, .desk-whiteboard) #particles { visibility: hidden; }
-body.satellite.particles-on .idle { opacity: 0; }
+body.satellite.particles-on .rest { opacity: 0; }

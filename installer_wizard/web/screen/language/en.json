@@ -9,7 +9,15 @@
     "screen_label": "SCREEN",
     "screen_n": "SCREEN {{n}}",
     "mirror_label": "{{assistant}} WIDGETS",
-    "idle_hint": "Drag a widget here from the edge of the other screen, or ask {{assistant}} to move it.",
-    "link_lost": "Reconnecting to the supervisor"
+    "link_lost": "Reconnecting to the supervisor",
+    "role_agent": "Assistant",
+    "role_work": "Work",
+    "role_visual": "Visual",
+    "screens_map": "Connected screens",
+    "pages_nav": "Widget pages",
+    "page_of": "{{n}} / {{total}}",
+    "page_go": "Page {{n}}",
+    "page_prev": "Previous page",
+    "page_next": "Next page"
   }
 }
