@@ -176,7 +176,7 @@ async def project(request: str) -> dict:
     return entry
 
 
-LIBRARIES = {"docx": "python-docx", "openpyxl": "openpyxl", "pptx": "python-pptx", "matplotlib": "matplotlib"}
+LIBRARIES = {"docx": "python-docx", "openpyxl": "openpyxl", "pptx": "python-pptx", "PIL": "Pillow"}
 
 
 def missing(fmts: list[str]) -> list[str]:

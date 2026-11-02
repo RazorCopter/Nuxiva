@@ -1,8 +1,17 @@
+import importlib.util
 import io
 import textwrap
 
+from features.documents import raster
+
+
+def engine() -> str:
+    return "matplotlib" if importlib.util.find_spec("matplotlib") else "pillow"
+
 
 def png(chart: dict, theme: dict, width_in: float = 6.4, height_in: float = 3.4) -> bytes:
+    if engine() == "pillow":
+        return raster.png(chart, theme, width_in, height_in)
     import matplotlib
     matplotlib.use("Agg")
     from matplotlib import pyplot as plt

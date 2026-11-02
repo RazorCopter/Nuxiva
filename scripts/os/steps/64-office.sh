@@ -8,7 +8,7 @@ VENV="$NUXIVA_DIR/installer_wizard/venv"
 REQ="$NUXIVA_DIR/installer_wizard/features/documents/requirements.txt"
 
 wanted() { [ "${NUXIVA_DOCUMENTS:-1}" != "0" ]; }
-python_ready() { "$VENV/bin/python" -c "import docx, openpyxl, pptx, matplotlib" >/dev/null 2>&1; }
+python_ready() { "$VENV/bin/python" -c "import docx, openpyxl, pptx, PIL, matplotlib" >/dev/null 2>&1; }
 
 step_check() {
     wanted || return 0

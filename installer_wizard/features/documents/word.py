@@ -245,11 +245,7 @@ class Writer:
     def chart(self, b: dict) -> None:
         from docx.enum.text import WD_ALIGN_PARAGRAPH
         from docx.shared import Cm
-        try:
-            data = charts.png(b, self.theme)
-        except Exception as exc:
-            self.doc.add_paragraph(f"[Grafico non disponibile: {exc}]", style="Didascalia Nuxiva")
-            return
+        data = charts.png(b, self.theme)
         p = self.doc.add_paragraph()
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
         p.add_run().add_picture(io.BytesIO(data), width=Cm(15.5))

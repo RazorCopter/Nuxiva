@@ -71,6 +71,16 @@ class DocumentsTest(unittest.TestCase):
         for path in made:
             path.unlink()
 
+    def test_charts_without_matplotlib(self):
+        from features.documents import raster, themes
+        theme = themes.pick("tech")
+        for kind in ("column", "bar", "line", "area", "scatter", "pie", "doughnut"):
+            data = raster.png({**CHART, "chart": kind}, theme)
+            self.assertTrue(data.startswith(b"\x89PNG"), kind)
+            self.assertGreater(len(data), 5000, kind)
+        self.assertEqual(raster.ticks(5, 5), [5])
+        self.assertGreaterEqual(raster.ticks(100, 170)[-1], 170)
+
     @unittest.skipUnless(convert.office(), "LibreOffice non installato")
     def test_libreoffice_formats(self):
         folder = archive.folder("documenti")
