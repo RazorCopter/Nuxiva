@@ -9,7 +9,7 @@ from state import store
 from features.google.accounts import accounts
 from features.google.app import oauth
 from features.google.flows import flows
-from features.google.constants import DEFAULT_SERVICES, REDIRECT_URI, SERVICES, log
+from features.google.constants import DEFAULT_SERVICES, REDIRECT_URI, SERVICES, linkable, log
 from features.google.notify import notifier
 from features.google.session import Session
 from features.google.timeparse import event_json
@@ -81,10 +81,10 @@ class Google:
         entry = accounts.get(slug) or {}
         granted = set(accounts.granted(entry)) if entry else set()
         return [{"id": s, "name": d["name"], "icon": d["icon"], "granted": s in granted, "workspace": bool(d.get("workspace"))}
-                for s, d in SERVICES.items()]
+                for s, d in SERVICES.items() if linkable(s)]
 
     def enable_service(self, slug: str, service: str) -> str | None:
-        if service not in SERVICES:
+        if not linkable(service):
             raise ValueError("Servizio non valido")
         entry = accounts.get(slug) or {}
         if entry.get("refresh") and service in accounts.covered(entry):
@@ -144,7 +144,7 @@ class Google:
                 "redirect_uri": REDIRECT_URI,
                 "default_services": DEFAULT_SERVICES.split(","),
                 "services": [{"id": s, "name": d["name"], "icon": d["icon"], "api": d["api"],
-                              "workspace": bool(d.get("workspace"))} for s, d in SERVICES.items()],
+                              "workspace": bool(d.get("workspace"))} for s, d in SERVICES.items() if linkable(s)],
                 "people": rows}
 
     async def preview(self, slug: str) -> dict:

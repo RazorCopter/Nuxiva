@@ -6,7 +6,7 @@ import urllib.parse
 import httpx
 from config import env_get
 
-from features.google.constants import REDIRECT_URI, SERVICES
+from features.google.constants import REDIRECT_URI, SERVICES, linkable
 from features.google.flows import LinkError, flows, parse
 
 _HINTS = {
@@ -29,7 +29,7 @@ class OAuthApp:
         cid, secret = self.credentials()
         if not (cid and secret):
             raise ValueError("Inserisci prima Client ID e Client Secret dell'app Google")
-        services = [s for s in services if s in SERVICES]
+        services = [s for s in services if linkable(s)]
         if not services:
             raise ValueError("Scegli almeno un servizio")
         scopes = ["openid", "email", "profile"] + [x for s in services for x in SERVICES[s]["scopes"]]

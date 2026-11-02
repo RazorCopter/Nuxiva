@@ -51,21 +51,12 @@
         "label": "Google Health API",
         "detail": "pulso, VFC, oxígeno, presión, glucosa, peso, pasos y sueño",
         "url": "https://console.cloud.google.com/apis/library/health.googleapis.com"
-      },
-      {
-        "label": "Google Keep API",
-        "detail": "notas (solo cuentas de Google Workspace)",
-        "url": "https://console.cloud.google.com/apis/library/keep.googleapis.com"
       }
     ],
     "copy": [
       {
         "label": "Permisos OAuth que hay que añadir en «Acceso a datos»",
         "text": "openid\nemail\nprofile\nhttps://www.googleapis.com/auth/calendar.events\nhttps://www.googleapis.com/auth/calendar.readonly\nhttps://www.googleapis.com/auth/contacts.readonly\nhttps://www.googleapis.com/auth/drive.metadata.readonly\nhttps://www.googleapis.com/auth/gmail.readonly\nhttps://www.googleapis.com/auth/gmail.send\nhttps://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly\nhttps://www.googleapis.com/auth/googlehealth.health_metrics_and_measurements.readonly\nhttps://www.googleapis.com/auth/googlehealth.sleep.readonly\nhttps://www.googleapis.com/auth/tasks"
-      },
-      {
-        "label": "Solo con Google Workspace, para Keep",
-        "text": "https://www.googleapis.com/auth/keep"
       }
     ],
     "links": [
@@ -98,7 +89,7 @@
         "url": "https://myaccount.google.com/permissions"
       }
     ],
-    "note": "En modo «Prueba» Google caduca la autorización cada 7 días: para evitarlo, en Audience pulsa «Publicar app». Una app personal no verificada funciona hasta con 100 usuarios mostrando el aviso de app no verificada. El Client Secret es privado: no lo compartas."
+    "note": "En modo «Prueba» Google caduca la autorización cada 7 días: para evitarlo, en Audience pulsa «Publicar app». Una app personal no verificada funciona hasta con 100 usuarios mostrando el aviso de app no verificada. El Client Secret es privado: no lo compartas. Google Keep no se vincula con este método: Google solo lo concede a empresas Google Workspace Enterprise mediante una cuenta de servicio con delegación de todo el dominio, así que no añadas el permiso …/auth/keep (Google lo rechaza)."
   },
   "help": {
     "NUXIVA_GOOGLE_CLIENT_ID": "Termina en .apps.googleusercontent.com. En Credenciales, ID de cliente de OAuth.",

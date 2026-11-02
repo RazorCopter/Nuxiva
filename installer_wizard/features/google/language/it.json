@@ -7,7 +7,7 @@
     "Calendar: impegni, nuovi appuntamenti con avviso di sovrapposizione, cancellazione, «quando sono libero»",
     "Gmail: non lette, ricerca per mittente o argomento, «leggimi l'ultima email»",
     "Tasks: «ricordami di…», elenco con ritardi, «ho fatto…»",
-    "Contatti, Drive e Keep (Workspace)",
+    "Contatti, Drive e Google Health (salute, attività e sonno)",
     "Promemoria personali prima di ogni appuntamento"
   ],
   "settings": {
@@ -60,21 +60,12 @@
         "label": "Google Health API",
         "detail": "battito, HRV, ossigeno, pressione, glicemia, peso, passi e sonno",
         "url": "https://console.cloud.google.com/apis/library/health.googleapis.com"
-      },
-      {
-        "label": "Google Keep API",
-        "detail": "note (solo account Google Workspace)",
-        "url": "https://console.cloud.google.com/apis/library/keep.googleapis.com"
       }
     ],
     "copy": [
       {
         "label": "Ambiti OAuth da aggiungere in «Accesso ai dati»",
         "text": "openid\nemail\nprofile\nhttps://www.googleapis.com/auth/calendar.events\nhttps://www.googleapis.com/auth/calendar.readonly\nhttps://www.googleapis.com/auth/contacts.readonly\nhttps://www.googleapis.com/auth/drive.metadata.readonly\nhttps://www.googleapis.com/auth/gmail.readonly\nhttps://www.googleapis.com/auth/gmail.send\nhttps://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly\nhttps://www.googleapis.com/auth/googlehealth.health_metrics_and_measurements.readonly\nhttps://www.googleapis.com/auth/googlehealth.sleep.readonly\nhttps://www.googleapis.com/auth/tasks"
-      },
-      {
-        "label": "Solo con Google Workspace, per Keep",
-        "text": "https://www.googleapis.com/auth/keep"
       }
     ],
     "links": [
@@ -107,7 +98,7 @@
         "url": "https://myaccount.google.com/permissions"
       }
     ],
-    "note": "In modalità «Test» Google fa scadere l'autorizzazione ogni 7 giorni: per evitarlo, in Audience premi «Pubblica app». Un'app personale non verificata funziona fino a 100 utenti mostrando l'avviso di app non verificata. Il Client Secret è riservato: non condividerlo."
+    "note": "In modalità «Test» Google fa scadere l'autorizzazione ogni 7 giorni: per evitarlo, in Audience premi «Pubblica app». Un'app personale non verificata funziona fino a 100 utenti mostrando l'avviso di app non verificata. Il Client Secret è riservato: non condividerlo. Google Keep non si collega con questo metodo: Google lo concede solo alle aziende Google Workspace Enterprise tramite un account di servizio con delega a livello di dominio, quindi non aggiungere l'ambito …/auth/keep (Google lo rifiuta)."
   },
   "help": {
     "NUXIVA_GOOGLE_CLIENT_ID": "Finisce con .apps.googleusercontent.com. Lo trovi in Credenziali, ID client OAuth.",

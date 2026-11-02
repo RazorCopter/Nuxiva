@@ -25,13 +25,17 @@ SERVICES = {
     "health_activity": {"name": "Google Health: attività e sonno", "icon": "🏃", "api": "health.googleapis.com",
                         "scopes": ["https://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly",
                                    "https://www.googleapis.com/auth/googlehealth.sleep.readonly"]},
-    "keep": {"name": "Google Keep", "icon": "📝", "api": "keep.googleapis.com", "workspace": True,
+    "keep": {"name": "Google Keep", "icon": "📝", "api": "keep.googleapis.com", "workspace": True, "oauth": False,
              "scopes": ["https://www.googleapis.com/auth/keep"]},
 }
 DEFAULT_SERVICES = "calendar,gmail,gmail_send,tasks,contacts,drive,health,health_activity"
 DAYS_IT = ["lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica"]
 MONTHS_IT = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre",
              "ottobre", "novembre", "dicembre"]
+
+
+def linkable(service: str) -> bool:
+    return service in SERVICES and SERVICES[service].get("oauth", True)
 
 
 class NotLinked(Exception):

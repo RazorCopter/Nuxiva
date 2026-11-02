@@ -1,6 +1,6 @@
 {
   "name": "Google Services",
-  "description": "Integration with Google Calendar, Gmail, Google Drive, and Google Maps API.",
+  "description": "Each person links their own Google account: calendar, mail, tasks, contacts, Drive and health, shown only to the person Nuxiva recognises.",
   "capabilities": [
     "Calendar event synchronization and query",
     "Gmail message reading and sending",
@@ -56,21 +56,12 @@
         "label": "Google Health API",
         "detail": "heart rate, HRV, oxygen, blood pressure, glucose, weight, steps and sleep",
         "url": "https://console.cloud.google.com/apis/library/health.googleapis.com"
-      },
-      {
-        "label": "Google Keep API",
-        "detail": "notes (Google Workspace accounts only)",
-        "url": "https://console.cloud.google.com/apis/library/keep.googleapis.com"
       }
     ],
     "copy": [
       {
         "label": "OAuth scopes to add under “Data access”",
         "text": "openid\nemail\nprofile\nhttps://www.googleapis.com/auth/calendar.events\nhttps://www.googleapis.com/auth/calendar.readonly\nhttps://www.googleapis.com/auth/contacts.readonly\nhttps://www.googleapis.com/auth/drive.metadata.readonly\nhttps://www.googleapis.com/auth/gmail.readonly\nhttps://www.googleapis.com/auth/gmail.send\nhttps://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly\nhttps://www.googleapis.com/auth/googlehealth.health_metrics_and_measurements.readonly\nhttps://www.googleapis.com/auth/googlehealth.sleep.readonly\nhttps://www.googleapis.com/auth/tasks"
-      },
-      {
-        "label": "Google Workspace only, for Keep",
-        "text": "https://www.googleapis.com/auth/keep"
       }
     ],
     "links": [
@@ -103,7 +94,7 @@
         "url": "https://myaccount.google.com/permissions"
       }
     ],
-    "note": "In “Testing” mode Google expires the authorisation every 7 days: to avoid it, press “Publish app” in Audience. An unverified personal app works for up to 100 users and shows the unverified app warning. The Client Secret is private: never share it."
+    "note": "In “Testing” mode Google expires the authorisation every 7 days: to avoid it, press “Publish app” in Audience. An unverified personal app works for up to 100 users and shows the unverified app warning. The Client Secret is private: never share it. Google Keep cannot be linked this way: Google only grants it to Google Workspace Enterprise organisations through a service account with domain-wide delegation, so do not add the …/auth/keep scope (Google rejects it)."
   },
   "help": {
     "NUXIVA_GOOGLE_CLIENT_ID": "Ends with .apps.googleusercontent.com. Find it under Credentials, OAuth client ID.",

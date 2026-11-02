@@ -34,7 +34,8 @@ class GuideTest(unittest.TestCase):
             guide = localize_feature(manifest("google"), lang)["guide"]
             urls = " ".join(item["url"] for item in guide["items"])
             scopes = " ".join(block["text"] for block in guide["copy"])
-            for service in SERVICES.values():
+            self.assertNotIn("auth/keep", scopes)
+            for service in (d for d in SERVICES.values() if d.get("oauth", True)):
                 self.assertIn(service["api"], urls, (lang, service["api"]))
                 for scope in service["scopes"]:
                     self.assertIn(scope, scopes, (lang, scope))
