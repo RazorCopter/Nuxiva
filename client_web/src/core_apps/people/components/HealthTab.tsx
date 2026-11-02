@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Activity, AlertTriangle, Footprints, HeartPulse, Moon, Scale, Wind } from 'lucide-react';
 import { reportError } from '../../../shared/errors/errorBus';
-import { HEALTH_GROUPS, HealthGroup, HealthState, HealthValue, fetchHealth, syncHealth } from '../data/healthApi';
+import { HEALTH_GROUPS, HealthGroup, HealthState, HealthValue, fetchHealth, setCameraVitals, syncHealth } from '../data/healthApi';
 import { usePeopleI18n } from '../scope';
 import { Ring, Sparkline } from './HealthCharts';
 import { HealthSources } from './HealthSources';
@@ -44,6 +44,8 @@ export const HealthTab: React.FC<Props> = ({ slug, busy, run, onConnectors }) =>
   }, []);
 
   const sync = () => void run('health-sync', () => syncHealth(slug), 'people_health_failed').then(() => setTick((v) => v + 1));
+  const toggleCamera = () =>
+    state && void run('health-camera', () => setCameraVitals(!state.camera.enabled), 'people_health_failed').then(() => setTick((v) => v + 1));
   const show = (v: HealthValue) => (v.metric === 'sleep_min' || v.metric.startsWith('sleep_') ? t('hl_hours', { h: Math.floor(v.value / 60), m: Math.round(v.value % 60) }) : number.format(v.value));
 
   if (!state) {
@@ -133,7 +135,7 @@ export const HealthTab: React.FC<Props> = ({ slug, busy, run, onConnectors }) =>
           })}
         </>
       )}
-      <HealthSources state={state} busy={busy} onSync={sync} onConnectors={onConnectors} />
+      <HealthSources state={state} busy={busy} onSync={sync} onConnectors={onConnectors} onCamera={toggleCamera} />
       <div className="grid gap-3 xl:grid-cols-2">
         <VitalsCard slug={slug} busy={busy} run={run} />
       </div>

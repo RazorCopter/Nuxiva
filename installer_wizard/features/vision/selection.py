@@ -90,3 +90,7 @@ def near_hold_seconds() -> float:
         return max(0.0, min(60.0, float(_cfg("NUXIVA_VISION_NEAR_HOLD_S", "6.0"))))
     except ValueError:
         return 6.0
+
+
+def rppg_enabled() -> bool:
+    return _cfg("NUXIVA_RPPG", "1").lower() not in ("0", "off", "false", "no")

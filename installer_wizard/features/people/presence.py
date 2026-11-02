@@ -99,6 +99,17 @@ class PresenceMonitor:
                     self._journal(p["slug"], wellbeing.live(p["slug"]))
 
     @staticmethod
+    def _vitals_targets() -> list[str]:
+        from features.people.vitals.camera import camera
+        return camera.targets(store.presence.get("people") or [])
+
+    @staticmethod
+    def _vitals(data: dict, visible: list, wanted: list[str]) -> None:
+        from features.people.vitals.camera import camera
+        if wanted:
+            camera.ingest(visible, data.get("vitals_cost"), wanted)
+
+    @staticmethod
     def _journal(slug: str, live: dict | None) -> None:
         from features.people import learning
         try:
@@ -217,7 +228,8 @@ class PresenceMonitor:
                     await asyncio.sleep(10)
                     continue
                 try:
-                    data = (await client.get(f"{VISION_URL}/presence")).json()
+                    wanted = self._vitals_targets()
+                    data = (await client.get(f"{VISION_URL}/presence", params={"vitals": ",".join(wanted)} if wanted else None)).json()
                     visible = self.with_languages(self.smooth(data.get("people", [])))
                     previous = store.presence.get("people", [])
                     store.presence = {"status": data.get("status"), "error": data.get("error", ""),
@@ -227,6 +239,7 @@ class PresenceMonitor:
                         store.touch()
                     self._publish(data, visible)
                     self._affect(visible)
+                    self._vitals(data, visible, wanted)
                     if store.phase in ("READY", "DEGRADED"):
                         self._evaluate(visible)
                         from features.automations.bus import bus as automation_bus

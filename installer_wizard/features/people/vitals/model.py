@@ -27,7 +27,7 @@ METRICS = {
 }
 GROUPS = ("heart", "breath", "body", "move", "rest")
 KINDS = ("ble", "push", "phone")
-PRIORITY = {"cloud": 1, "ble": 2, "push": 3, "phone": 4}
+PRIORITY = {"camera": 0, "cloud": 1, "ble": 2, "push": 3, "phone": 4}
 MAX_FUTURE = 60
 MAX_AGE = max(spec["max_age"] for spec in METRICS.values())
 

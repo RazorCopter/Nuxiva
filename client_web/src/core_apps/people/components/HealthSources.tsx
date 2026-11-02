@@ -2,25 +2,27 @@ import React from 'react';
 import { Bluetooth, Cloud, RefreshCw, Smartphone } from 'lucide-react';
 import { HealthState } from '../data/healthApi';
 import { chipClass, relative, usePeopleI18n } from '../scope';
+import { WebcamSource } from './WebcamSource';
 
 interface Props {
   readonly state: HealthState;
   readonly busy: string | null;
   readonly onSync: () => void;
   readonly onConnectors: () => void;
+  readonly onCamera: () => void;
 }
 
 const badge = (on: boolean) => `rounded-full border px-2 py-0.5 text-xs ${on ? 'border-emerald-300 text-emerald-800' : 'border-slate-300 text-slate-600'}`;
 
-export const HealthSources: React.FC<Props> = ({ state, busy, onSync, onConnectors }) => {
+export const HealthSources: React.FC<Props> = ({ state, busy, onSync, onConnectors, onCamera }) => {
   const { t, lang } = usePeopleI18n();
   const ble = state.devices.filter((d) => d.kind === 'ble');
   const phones = state.devices.filter((d) => d.kind !== 'ble');
   const streaming = (rows: typeof state.devices) => rows.some((d) => d.state === 'streaming' || d.state === 'connected');
   return (
-    <section aria-labelledby="health-sources" className="grid gap-3 lg:grid-cols-3">
+    <section aria-labelledby="health-sources" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <h3 id="health-sources" className="sr-only">{t('hl_sources')}</h3>
-      <article className="flex flex-col gap-2 rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 lg:col-span-1">
+      <article className="flex flex-col gap-2 rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4">
         <header className="flex items-center gap-2">
           <Cloud className="h-4 w-4 text-blue-700" aria-hidden="true" />
           <h4 className="font-semibold text-slate-900">{t('hl_src_google')}</h4>
@@ -62,6 +64,7 @@ export const HealthSources: React.FC<Props> = ({ state, busy, onSync, onConnecto
         </header>
         <p className="text-xs text-slate-600">{t('hl_src_phone_hint')}</p>
       </article>
+      <WebcamSource camera={state.camera} busy={busy} onToggle={onCamera} />
     </section>
   );
 };

@@ -1,10 +1,14 @@
 import { NodeModuleError, asRecord, asString, requestJson } from '../../../node_apps/shared/data/http';
+import { saveSettings } from '../../shared/featureApi';
 import { SLUG } from './peopleApi';
 
 export const HEALTH_GROUPS = ['heart', 'breath', 'body', 'move', 'rest'] as const;
 export type HealthGroup = (typeof HEALTH_GROUPS)[number];
 const METRIC = /^[a-z0-9_]{2,24}$/;
-const KINDS = ['cloud', 'ble', 'push', 'phone'] as const;
+const KINDS = ['cloud', 'ble', 'push', 'phone', 'camera'] as const;
+export const CAMERA_STATES = ['off', 'band', 'busy', 'idle', 'measuring', 'streaming'] as const;
+export type CameraVitalsState = (typeof CAMERA_STATES)[number];
+const CAMERA_SETTING = 'NUXIVA_RPPG';
 
 export interface HealthValue {
   readonly metric: string;
@@ -40,6 +44,12 @@ export interface HealthDevice {
   readonly state: string;
 }
 
+export interface CameraVitals {
+  readonly enabled: boolean;
+  readonly state: CameraVitalsState;
+  readonly progress: number;
+}
+
 export interface HealthState {
   readonly values: readonly HealthValue[];
   readonly pulse: readonly number[];
@@ -49,6 +59,7 @@ export interface HealthState {
   readonly signals: readonly HealthSignal[];
   readonly cloud: { readonly health: boolean; readonly activity: boolean; readonly state: string; readonly at: number };
   readonly devices: readonly HealthDevice[];
+  readonly camera: CameraVitals;
 }
 
 const num = (v: unknown): number | null => {
@@ -88,6 +99,8 @@ export function parseHealth(input: unknown): HealthState {
   const score = num(recovery.score);
   const band = String(recovery.band ?? '');
   const cloud = asRecord(raw.cloud);
+  const cam = asRecord(raw.camera);
+  const camState = String(cam.state ?? '');
   return {
     values,
     pulse: list(raw.pulse).slice(-120).flatMap((p) => {
@@ -111,6 +124,11 @@ export function parseHealth(input: unknown): HealthState {
       const id = asString(d.id, 24) ?? '';
       return /^[a-f0-9]{4,24}$/.test(id) ? [{ id, label: asString(d.label, 40) ?? '', kind: asString(d.kind, 8) ?? '', state: asString(d.state, 16) ?? '' }] : [];
     }),
+    camera: {
+      enabled: cam.enabled === true,
+      state: (CAMERA_STATES as readonly string[]).includes(camState) ? (camState as CameraVitalsState) : 'off',
+      progress: Math.max(0, Math.min(1, num(cam.progress) ?? 0)),
+    },
   };
 }
 
@@ -121,4 +139,8 @@ export async function fetchHealth(slug: string, days: number, signal?: AbortSign
 
 export async function syncHealth(slug: string): Promise<void> {
   await requestJson<unknown>(`/api/people/${slugOf(slug)}/health/sync`, { method: 'POST' });
+}
+
+export async function setCameraVitals(enabled: boolean): Promise<void> {
+  await saveSettings('people', { [CAMERA_SETTING]: enabled ? '1' : '0' });
 }

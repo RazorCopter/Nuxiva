@@ -6,9 +6,11 @@
     "Anniversaires et jours fériés",
     "Rapports",
     "Habitudes",
-    "Met à jour seule le profil de la personne qui parle et note son humeur, avec votre avis"
+    "Met à jour seule le profil de la personne qui parle et note son humeur, avec votre avis",
+    "Pouls et respiration estimés par la webcam pour les personnes sans bracelet connecté, désactivables pour économiser des ressources"
   ],
   "settings": {
-    "NUXIVA_PEOPLE_LEARN": "Apprendre des conversations"
+    "NUXIVA_PEOPLE_LEARN": "Apprendre des conversations",
+    "NUXIVA_RPPG": "Pouls et respiration par la webcam pour les personnes sans bracelet connecté"
   }
 }

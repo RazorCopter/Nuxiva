@@ -10,6 +10,7 @@ from features.people.vitals import cloud, service
 from features.people.vitals.history import history
 from features.people.vitals.model import METRICS
 from features.people.vitals.book import book
+from features.people.vitals.camera import camera
 from features.people.vitals.journal import journal
 from features.people.vitals.live import live
 from features.people.vitals.nearby import SEARCH_SECONDS, nearby
@@ -121,6 +122,7 @@ async def person_health(slug: str, days: int = 14, _: str = Depends(require_admi
     view["devices"] = service.devices_view(slug, view["values"], now)
     view["units"] = service.units()
     view["groups"] = {m: spec["group"] for m, spec in METRICS.items()}
+    view["camera"] = camera.status(slug, now)
     return view
 
 
@@ -177,6 +179,7 @@ async def person_vitals_add(slug: str, request: Request, user: str = Depends(req
         raise HTTPException(400, str(exc))
     store.event("INFO", f"Dispositivo vitali '{device['label']}' aggiunto a {slug} da {user}", "people")
     journal.add(slug, "info", "device_added", {"device": device["label"]})
+    camera.forget(slug)
     nearby.stop(slug)
     return {"device": device, "token": token}
 
@@ -204,6 +207,7 @@ async def person_vitals_switch(slug: str, device_id: str, action: str, user: str
         raise HTTPException(404, "Dispositivo non trovato")
     service.drop_device(book.raw(device_id) or device)
     journal.add(slug, "info", "device_on" if action == "reconnect" else "device_off", {"device": device["label"]})
+    camera.forget(slug)
     store.event("INFO", f"Dispositivo vitali {device_id} {'ricollegato' if action == 'reconnect' else 'scollegato'} per {slug} da {user}", "people")
     return {"device": device}
 
@@ -216,4 +220,5 @@ async def person_vitals_remove(slug: str, device_id: str, user: str = Depends(re
     live.forget(slug)
     store.event("INFO", f"Dispositivo vitali {device_id} rimosso da {slug} da {user}", "people")
     journal.add(slug, "info", "device_removed")
+    camera.forget(slug)
     return {"ok": True}

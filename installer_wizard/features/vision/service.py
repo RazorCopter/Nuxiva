@@ -19,6 +19,7 @@ from objects import ObjectDetector
 from shared_frames import SharedEncoder
 from tracks import Track, facing, iou, reliable_unknown
 from views import Views, router as views_router
+from vitalcam import VitalCam
 
 log = logging.getLogger("nuxiva.vision")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
@@ -50,6 +51,7 @@ class Vision:
         self.views = None
         self.frame_id = 0
         self.encoder = SharedEncoder()
+        self.vitals = VitalCam()
         self.last_process = 0.0
         self.fast_until = 0.0
         self.detector = cv2.FaceDetectorYN.create(str(MODELS / "face_detection_yunet_2023mar.onnx"), "",
@@ -111,6 +113,9 @@ class Vision:
                 with self.lock:
                     self.raw = frame.copy()
                     self.frame_id += 1
+                if self.vitals.busy(self.tracks, start):
+                    self.fast_until = max(self.fast_until, start + 0.5)
+                    self.vitals.sample(frame, self.tracks, start)
                 if start - self.last_process >= 1 / DETECT_FPS:
                     self.last_process = start
                     try:
@@ -274,12 +279,13 @@ class Vision:
                            "auto": bool(person.get("auto")), "facing": t.facing,
                            "confidence": round(score, 3), "proximity": prox, "raw_proximity": round(ratio, 3),
                            "near": is_near, "since": t.first_seen, "affect": t.affect if slug else None,
+                           "vitals": self.vitals.reading(t, now) if slug else None,
                            "gaze": {"x": round((bx + bw / 2) / (w or 640), 3),
                                     "y": round((by + bh / 2) / h, 3)}})
         people.sort(key=lambda p: -p["proximity"])
         return {"status": self.status, "error": self.error, "people": people, "objects": self.visible_objects(),
                 "frame": [int(self.size[0] or 0), int(self.size[1] or 0)],
-                "ir": self.ir.view(), "time": now}
+                "ir": self.ir.view(), "vitals_cost": self.vitals.cost(), "time": now}
 
     def visible_objects(self) -> list:
         if not self.objects or time.time() - self.objects.updated > 10:
@@ -348,7 +354,8 @@ async def health():
 
 
 @app.get("/presence")
-async def presence():
+async def presence(vitals: str = ""):
+    vision.vitals.want(vitals)
     return JSONResponse(vision.presence())
 
 

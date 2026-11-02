@@ -15,7 +15,8 @@
     "Ricorrenze imminenti",
     "Abitudini dichiarate e rilevate di ogni persona",
     "Abitudini della casa (proposte, previsioni, situazioni insolite)",
-    "Aggiorna da sola le informazioni della persona che parla e annota lo stato d'animo, con il tuo giudizio"
+    "Aggiorna da sola le informazioni della persona che parla e annota lo stato d'animo, con il tuo giudizio",
+    "Battito e respiro stimati dalla webcam per chi non ha un bracciale collegato, disattivabili per risparmiare risorse"
   ],
   "icon3d": "./icon.png",
   "icon3dSource": {
@@ -30,6 +31,12 @@
     {
       "key": "NUXIVA_PEOPLE_LEARN",
       "label": "Impara dalle conversazioni",
+      "type": "bool",
+      "default": "1"
+    },
+    {
+      "key": "NUXIVA_RPPG",
+      "label": "Battito e respiro dalla webcam per chi non ha un bracciale collegato",
       "type": "bool",
       "default": "1"
     }
