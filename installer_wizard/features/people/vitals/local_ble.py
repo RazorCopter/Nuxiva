@@ -5,7 +5,7 @@ import time
 
 from config import env_get
 from features.bluetooth import adapter
-from features.people.vitals.ble_codec import METRICS_OF, PARSERS, nearby_rows
+from features.people.vitals.ble_codec import HR_CHAR, METRICS_OF, PARSERS, RrWindow, nearby_rows, rr_intervals
 from features.people.vitals.book import book
 from features.people.vitals.nearby import nearby
 
@@ -17,6 +17,7 @@ PAUSE_SECONDS = 2.0
 IDLE_SECONDS = 20.0
 CONNECT_TIMEOUT = 10.0
 MAX_SAMPLES = 200
+MAX_BUFFER = 2000
 
 
 class LocalBle:
@@ -27,6 +28,7 @@ class LocalBle:
         self.samples: list[dict] = []
         self.errors: list[dict] = []
         self.profiles: dict[str, list[str]] = {}
+        self.rr: dict[str, RrWindow] = {}
         self.dropped: set[str] = set()
         self.discover = False
         self.last_error = ""
@@ -61,13 +63,21 @@ class LocalBle:
             log.info("Scansione BLE del server non riuscita: %s", exc)
             return {}
 
-    def _notifier(self, address: str, parser):
+    def _notifier(self, address: str, char: str, parser):
         def notify(_, data) -> None:
-            now = time.time()
-            self.samples.extend({"address": address, "metric": m, "value": v, "ts": now} for m, v in parser(bytes(data)))
+            now, raw = time.time(), bytes(data)
+            rows = parser(raw)
+            if char == HR_CHAR:
+                rmssd = self.rr.setdefault(address, RrWindow()).add(rr_intervals(raw))
+                if rmssd:
+                    rows.append(("hrv", rmssd))
+            self.samples.extend({"address": address, "metric": m, "value": v, "ts": now} for m, v in rows)
+            if len(self.samples) > MAX_BUFFER:
+                del self.samples[:len(self.samples) - MAX_BUFFER]
         return notify
 
     async def _drop(self, address: str) -> None:
+        self.rr.pop(address, None)
         client = self.clients.pop(address, None)
         if client:
             try:
@@ -78,21 +88,32 @@ class LocalBle:
     async def _connect(self, address: str) -> None:
         from bleak import BleakClient
         client = BleakClient(address)
+        usable: list[str] = []
+        linked = False
         try:
             await client.connect(timeout=CONNECT_TIMEOUT)
-            usable: list[str] = []
+            linked = True
             for char, parser in PARSERS.items():
-                if client.services.get_characteristic(char):
+                if not client.services.get_characteristic(char):
+                    continue
+                try:
+                    await client.start_notify(char, self._notifier(address, char, parser))
                     usable += METRICS_OF[char]
-                    await client.start_notify(char, self._notifier(address, parser))
-            self.profiles[address] = sorted(set(usable))
-            if usable:
-                self.clients[address] = client
-            else:
-                await client.disconnect()
+                except Exception as exc:
+                    log.info("Profilo %s di %s non attivato: %s", char[4:8], address, exc)
         except Exception as exc:
             self.errors.append({"address": address, "code": "connect_failed"})
             log.info("Connessione BLE a %s non riuscita: %s", address, exc)
+        if linked:
+            self.profiles[address] = sorted(set(usable))
+        if usable and client.is_connected:
+            self.clients[address] = client
+            return
+        try:
+            if client.is_connected:
+                await client.disconnect()
+        except Exception as exc:
+            log.info("Chiusura BLE %s: %s", address, exc)
 
     async def cycle(self) -> None:
         found = await self._scan()

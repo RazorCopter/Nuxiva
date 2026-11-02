@@ -165,6 +165,7 @@
     "error_node_bluetooth_trust_failed": "Il dispositivo non è stato reso attendibile.",
     "error_node_bluetooth_untrust_failed": "Fiducia del dispositivo non revocata.",
     "error_bluetooth_paired_not_connected": "Dispositivo accoppiato ma non ancora collegato: accendilo e premi Collega.",
-    "error_brain_everywhere_failed": "Non sono riuscito ad applicare il modello a tutto."
+    "error_brain_everywhere_failed": "Non sono riuscito ad applicare il modello a tutto.",
+    "error_people_health_failed": "Dati della salute non disponibili."
   }
 }

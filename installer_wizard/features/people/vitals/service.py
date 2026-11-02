@@ -6,6 +6,8 @@ from collections import deque
 from features.nodes.registry import registry
 from features.people.vitals import cloud
 from features.people.vitals.book import book
+from features.people.vitals.history import history
+from features.people.vitals import insight
 from features.people.vitals.lease import arbiter
 from features.people.vitals.journal import journal
 from features.people.vitals.live import live
@@ -58,6 +60,7 @@ def ingest(slug: str, samples, source: str, kind: str, now: float | None = None)
             rejected += 1
             continue
         if live.put(slug, sample, source, kind, now):
+            history.record(slug, sample, source, kind, now)
             accepted += 1
     live.prune(now)
     return {"accepted": accepted, "rejected": rejected}
@@ -176,9 +179,26 @@ def diagnosis(now: float | None = None) -> dict:
             "server": not blockers}
 
 
+def current(slug: str, now: float | None = None) -> dict:
+    now = now or time.time()
+    return {**history.last_known(slug, now), **live.latest(slug, now)}
+
+
+def health_view(slug: str, now: float | None = None) -> dict:
+    now = now or time.time()
+    values = current(slug, now)
+    if not values:
+        return {}
+    trends = {m: history.trend(slug, m, 7, now) for m in ("resting_hr", "hrv", "sleep_min", "steps")}
+    return {"values": values, "pulse": live.series(slug, "heart_rate", 90, now - 1800),
+            "trends": {m: t for m, t in trends.items() if any(d["value"] is not None for d in t)},
+            "recovery": insight.recovery(slug, values, now), "goals": insight.goals(values), "signals": insight.signals(values),
+            "sources": sorted({v["kind"] for v in values.values()}), "at": now}
+
+
 def snapshot(slug: str, now: float | None = None) -> dict:
     now = now or time.time()
-    return {"values": live.latest(slug, now), "lease": arbiter.view(slug, now),
+    return {"values": current(slug, now), "lease": arbiter.view(slug, now),
             "cloud": {"ready": cloud.ready(slug), **cloud.status(slug)}}
 
 

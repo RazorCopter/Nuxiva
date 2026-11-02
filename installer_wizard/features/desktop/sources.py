@@ -87,6 +87,16 @@ async def weather() -> dict | None:
     return panel["data"] if panel else None
 
 
-SOURCES = {"sun_cycle": sun_cycle, "home_rooms": home_rooms, "update_ready": update_ready, "components_down": components_down}
+def person_health() -> dict | None:
+    from features.people.focus import health_card
+    return health_card()
+
+
+def person_mood() -> dict | None:
+    from features.people.focus import mood_card
+    return mood_card()
+
+
+SOURCES = {"person_health": person_health, "person_mood": person_mood, "sun_cycle": sun_cycle, "home_rooms": home_rooms, "update_ready": update_ready, "components_down": components_down}
 PROVIDERS = {"system_monitor": system_monitor, "system_health": system_health, "network_devices": network_devices,
              "sun_cycle": sun_cycle, "weather": weather}

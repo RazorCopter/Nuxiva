@@ -3,7 +3,7 @@
   const ID_OK = /^[A-Za-z0-9_-]{6,40}$/;
   const REPORT_EVERY = 30000, POLICY_EVERY = 120000;
   const STOP = Symbol("stop");
-  const st = { policy: null, tier: "full", costs: {}, applied: false, reportFails: 0 };
+  const st = { policy: null, tier: "full", costs: {}, seen: {}, spent: 0, applied: false, reportFails: 0 };
 
   const randomId = () => Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => b.toString(16).padStart(2, "0")).join("");
   function deviceId() {
@@ -32,7 +32,7 @@
     const before = st.policy;
     st.policy = policy;
     setTier(policy.enabled ? policy.tier : "full");
-    if (!before || before.max_active !== policy.max_active || before.max_ambient !== policy.max_ambient) {
+    if (!before || before.max_active !== policy.max_active || before.max_ambient !== policy.max_ambient || before.budget !== policy.budget) {
       window.dispatchEvent(new CustomEvent("nuxiva-policy", { detail: policy }));
     }
   }
@@ -44,12 +44,48 @@
     } catch (err) { console.warn("Politica delle risorse non letta", err); }
   }
 
+  function probeGpu() {
+    const out = { renderer: "", device_memory: navigator.deviceMemory || 0, cores: navigator.hardwareConcurrency || 0,
+      max_texture: 0, pixels: Math.round(screen.width * screen.height * (window.devicePixelRatio || 1) ** 2), webgpu: "gpu" in navigator };
+    try {
+      const canvas = document.createElement("canvas");
+      const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
+      if (gl) {
+        const info = gl.getExtension("WEBGL_debug_renderer_info");
+        out.renderer = String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER) || "").replace(/[^\w\s().,/+:;@#-]/g, "").slice(0, 160);
+        out.max_texture = gl.getParameter(gl.MAX_TEXTURE_SIZE) || 0;
+        const lose = gl.getExtension("WEBGL_lose_context");
+        if (lose) lose.loseContext();
+      } else out.renderer = "software";
+    } catch (err) { console.warn("GPU non analizzata", err); }
+    return out;
+  }
+  const GPU = probeGpu();
+
+  function weightOf(i) {
+    const declared = Number(i.weight) || 2;
+    const c = st.seen[String(i.id)];
+    return declared + (c ? Math.min(3, c / 8) : 0);
+  }
+
   function limit(list) {
     const p = st.policy;
     if (!p || !p.enabled) return list;
-    const must = list.filter((i) => i.takeover || i.intent || i.pos);
-    const rest = list.filter((i) => !(i.takeover || i.intent || i.pos));
-    const keep = new Set([...must, ...rest.slice(0, Math.max(0, Math.max(1, p.max_active) - must.length))]);
+    const forced = (i) => i.takeover || i.intent || i.pos || i.urgent;
+    const must = list.filter(forced);
+    const rest = list.filter((i) => !forced(i)).sort((a, b) => (b.priority || 0) - (a.priority || 0));
+    const budget = Number(p.budget) || Infinity;
+    const slots = Math.max(1, p.max_active);
+    let spent = must.reduce((sum, i) => sum + weightOf(i), 0);
+    const keep = new Set(must);
+    for (const i of rest) {
+      if (keep.size >= slots) break;
+      const w = weightOf(i);
+      if (spent + w > budget && keep.size > 0) continue;
+      keep.add(i);
+      spent += w;
+    }
+    st.spent = Math.round(spent * 10) / 10;
     return list.filter((i) => keep.has(i));
   }
 
@@ -100,11 +136,12 @@
     const perf = (window.nuxivaPerf && window.nuxivaPerf.stats) || { fps: 0, p95: 0, longMs: 0 };
     const widgets = Object.values(st.costs).sort((a, b) => b.ms - a.ms).slice(0, 30)
       .map((c) => ({ id: c.id, ms: Math.round(c.ms), mounts: c.mounts, nodes: c.nodes }));
+    for (const c of widgets) if (c.mounts || c.nodes) st.seen[c.id] = c.ms / Math.max(1, c.mounts || 1);
     st.costs = {};
     const active = window.NuxivaDesk ? window.NuxivaDesk.active.length : 0;
     try {
       const r = await fetch("/api/governor/report", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ device: DEVICE, fps: perf.fps, p95: perf.p95, longtask_ms: perf.longMs, active, visible: true, widgets }) });
+        body: JSON.stringify({ device: DEVICE, fps: perf.fps, p95: perf.p95, longtask_ms: perf.longMs, active, visible: true, widgets, gpu: GPU }) });
       if (!r.ok) { st.reportFails++; return; }
       st.reportFails = 0;
       adopt(await r.json());
@@ -114,9 +151,12 @@
   pull();
   setInterval(pull, POLICY_EVERY);
   setInterval(report, REPORT_EVERY);
+  setTimeout(report, 5000);
   window.nuxivaGovernor = {
     limit, measure, cost, poll, frameGap, STOP, device: DEVICE, refresh: pull, report,
     get tier() { return st.tier; },
     get policy() { return st.policy; },
+    get spent() { return st.spent; },
+    gpu: GPU,
   };
 })();

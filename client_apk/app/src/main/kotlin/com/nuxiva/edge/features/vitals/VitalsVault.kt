@@ -22,11 +22,15 @@ class VitalsVault(context: Context) {
         get() = prefs.getString(KEY_BLE, "").orEmpty()
         set(value) = prefs.edit().putString(KEY_BLE, value).apply()
 
+    var healthSince: Long
+        get() = prefs.getLong(KEY_SINCE, 0L)
+        set(value) = prefs.edit().putLong(KEY_SINCE, value).apply()
+
     fun linked(): Boolean = server.isNotEmpty() && token.isNotEmpty()
 
     fun link(server: String, token: String): Boolean {
         if (!validServer(server) || !TOKEN.matches(token)) return false
-        prefs.edit().putString(KEY_SERVER, server.trimEnd('/')).putString(KEY_TOKEN, token).putString(KEY_BLE, "").apply()
+        prefs.edit().putString(KEY_SERVER, server.trimEnd('/')).putString(KEY_TOKEN, token).putString(KEY_BLE, "").remove(KEY_SINCE).apply()
         return true
     }
 
@@ -37,6 +41,7 @@ class VitalsVault(context: Context) {
         private const val KEY_SERVER = "server"
         private const val KEY_TOKEN = "token"
         private const val KEY_BLE = "ble"
+        private const val KEY_SINCE = "health_since"
         private val TOKEN = Regex("^[A-Za-z0-9_-]{20,80}$")
 
         fun validServer(value: String): Boolean = runCatching {

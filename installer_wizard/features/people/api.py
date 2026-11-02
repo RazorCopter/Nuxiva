@@ -22,6 +22,7 @@ from features.people.vitals import api as vitals_api
 from features.people.vitals.book import book as vitals_book
 from features.people.vitals.journal import journal as vitals_journal
 from features.people.vitals.live import live as vitals_live
+from features.people.vitals.history import history as vitals_history
 from features.vision.proxy import vision_proxy
 from features.voices.catalog import VOICES
 from state import store
@@ -177,6 +178,7 @@ async def admin_person_delete(slug: str, user: str = Depends(require_admin)):
     people.delete(slug)
     vitals_book.forget_person(slug)
     vitals_live.forget(slug)
+    vitals_history.forget(slug)
     games_saves.forget(slug)
     fingerprint_bindings.forget(slug)
     wellbeing_service.forget(slug)

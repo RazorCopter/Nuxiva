@@ -236,14 +236,16 @@ class ScreenRolesTest(unittest.TestCase):
     def test_work_goes_to_the_workbench_screen(self):
         with mock.patch("features.desktop.screens.configured_roles", lambda: {}):
             s = self.screens(0, 1, 2)
-            items = s.assign([{"id": "repair_workbench"}, {"id": "diorama"}, {"id": "weather"}, {"id": "alarm", "urgent": True}], {})
-            self.assertEqual([i["screen"] for i in items], [1, 2, 0, -1])
+            items = s.assign([{"id": "repair_workbench"}, {"id": "diorama"}, {"id": "weather"}, {"id": "alarm", "urgent": True},
+                              {"id": "health_hub", "screen_role": "person"}], {})
+            self.assertEqual([i["screen"] for i in items], [1, 2, 1, -1, 0])
             alone = self.screens(0).assign([{"id": "repair_workbench"}, {"id": "weather"}], {})
             self.assertEqual([i["screen"] for i in alone], [-1, -1])
 
     def test_role_hint_from_the_widget(self):
         self.assertEqual(role_of({"id": "weather", "screen_role": "visual"}), "visual")
         self.assertEqual(role_of({"id": "code_view", "screen_role": "nonsense"}), "work")
+        self.assertEqual(role_of({"id": "mood_aura", "screen_role": "person"}), "person")
 
     def test_screen_roles_setting_is_validated(self):
         self.assertEqual(system_api._screen_roles({"0": "agent", "1": "visual", "17": "work", "2": "root", "x": "work", 3: "work",

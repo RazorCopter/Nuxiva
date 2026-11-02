@@ -8,12 +8,13 @@ import { PERMISSION_KEYS, chipClass, fieldClass, initials, localLabel, panelClas
 import { ConnectorsTab } from './ConnectorsTab';
 import { FaceTab } from './FaceTab';
 import { HabitsTab } from './HabitsTab';
+import { HealthTab } from './HealthTab';
 import { MemoriesTab } from './MemoriesTab';
 import { MoodTab } from './MoodTab';
 import { SectionForm } from './SectionForm';
 import { VoiceTab } from './VoiceTab';
 
-const TABS = ['profile', 'permissions', 'face', 'voice', 'habits', 'connectors', 'memories', 'mood'] as const;
+const TABS = ['profile', 'health', 'mood', 'permissions', 'face', 'voice', 'habits', 'connectors', 'memories'] as const;
 type Tab = (typeof TABS)[number];
 
 interface PersonViewProps {
@@ -187,6 +188,7 @@ export const PersonView: React.FC<PersonViewProps> = ({ summary, sections, voice
         {tab === 'connectors' && <ConnectorsTab slug={summary.slug} busy={busy} run={act} />}
         {tab === 'memories' && <MemoriesTab slug={summary.slug} busy={busy} run={act} />}
         {tab === 'mood' && <MoodTab slug={summary.slug} busy={busy} run={act} />}
+        {tab === 'health' && <HealthTab slug={summary.slug} busy={busy} run={act} onConnectors={() => setTab('connectors')} />}
       </div>
       {confirm && (
         <ConfirmDialog

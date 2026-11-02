@@ -25,6 +25,7 @@ class VitalsService : Service() {
     private lateinit var uploader: VitalsUploader
     private var ble: BleVitalsMonitor? = null
     private var poller: Job? = null
+    private var flusher: Job? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -38,13 +39,21 @@ class VitalsService : Service() {
             return START_NOT_STICKY
         }
         startForegroundCompat()
-        ble = ble ?: BleVitalsMonitor(this, vault) { samples -> scope.launch { uploader.send(samples) } }
+        ble = ble ?: BleVitalsMonitor(this, vault) { samples -> uploader.offer(samples) }
         runCatching { ble?.start() }
+        if (flusher?.isActive != true) {
+            flusher = scope.launch {
+                while (isActive) {
+                    runCatching { uploader.flush() }
+                    delay(FLUSH_MS)
+                }
+            }
+        }
         if (poller?.isActive != true) {
             poller = scope.launch {
-                val reader = HealthConnectReader(this@VitalsService)
+                val reader = HealthConnectReader(this@VitalsService, vault)
                 while (isActive) {
-                    runCatching { uploader.send(reader.read()) }
+                    runCatching { if (uploader.send(reader.read())) reader.commit() }
                     delay(POLL_MS)
                 }
             }
@@ -81,6 +90,7 @@ class VitalsService : Service() {
     companion object {
         private const val CHANNEL = "nuxiva_vitals_channel"
         private const val NOTIFICATION_ID = 4107
-        private const val POLL_MS = 30_000L
+        private const val POLL_MS = 60_000L
+        private const val FLUSH_MS = 5_000L
     }
 }

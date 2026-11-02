@@ -45,9 +45,17 @@ class LiveTest(unittest.TestCase):
 
     def test_stale_values_disappear_and_duplicates_are_ignored(self):
         live = Live()
-        self.assertTrue(live.put("a", {"metric": "spo2", "value": 97, "ts": 100.0}, "x", "ble", 100.0))
-        self.assertFalse(live.put("a", {"metric": "spo2", "value": 97, "ts": 100.0}, "x", "ble", 100.0))
-        self.assertEqual(live.latest("a", 400.0), {})
+        self.assertTrue(live.put("a", {"metric": "heart_rate", "value": 70, "ts": 100.0}, "x", "ble", 100.0))
+        self.assertFalse(live.put("a", {"metric": "heart_rate", "value": 70, "ts": 100.0}, "x", "ble", 100.0))
+        self.assertEqual(live.latest("a", 1000.0), {})
+
+    def test_daily_and_slow_metrics_stay_current_longer(self):
+        live = Live()
+        live.put("a", {"metric": "steps", "value": 8000, "ts": 100.0}, "x", "phone", 100.0)
+        live.put("a", {"metric": "weight", "value": 72.5, "ts": 100.0}, "x", "phone", 100.0)
+        live.put("a", {"metric": "heart_rate", "value": 70, "ts": 100.0}, "x", "phone", 100.0)
+        later = live.latest("a", 100.0 + 7200)
+        self.assertEqual(set(later), {"steps", "weight"})
 
 
 class LeaseTest(unittest.TestCase):
@@ -84,6 +92,7 @@ class Base(unittest.TestCase):
         book_module.book._data = None
         service.live.forget("anna")
         service.arbiter._claims.clear()
+        service._seen.clear()
         service.push_limit._hits.clear()
         service.node_limit._hits.clear()
         people.ensure("anna", "Anna Rossi")

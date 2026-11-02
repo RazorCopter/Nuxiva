@@ -5,6 +5,7 @@ import re
 import time
 from pathlib import Path
 
+from features.governor.gpu import clean_gpu
 from features.governor.profile import TIERS
 
 log = logging.getLogger("nuxiva.governor")
@@ -37,7 +38,7 @@ def clean_report(body: dict) -> dict | None:
                             "nodes": int(clamp(w.get("nodes"), 0, 100000)), "size": clamp(w.get("size"), 0, 10 ** 7)})
     return {"device": body["device"], "fps": clamp(body.get("fps"), 0, 240), "p95": clamp(body.get("p95"), 0, 5000),
             "longtask_ms": clamp(body.get("longtask_ms"), 0, 60000), "active": int(clamp(body.get("active"), 0, 100)),
-            "visible": body.get("visible") is not False, "widgets": widgets}
+            "visible": body.get("visible") is not False, "widgets": widgets, "gpu": clean_gpu(body.get("gpu"))}
 
 
 def verdict(report: dict) -> str:
@@ -86,6 +87,8 @@ class Devices:
             return entry["tier"] or base_tier, False
         entry["last"] = now
         entry["fps"], entry["p95"], entry["active"] = report["fps"], report["p95"], report["active"]
+        if report.get("gpu"):
+            entry["gpu"] = report["gpu"]
         kind = verdict(report)
         if kind != "idle":
             entry["history"] = (entry["history"] + [kind])[-HISTORY:]

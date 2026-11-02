@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager, contextmanager
 import psutil
 
 from config import STATE_DIR
-from features.governor import conf, pressure, profile
+from features.governor import conf, gpu, pressure, profile
 from features.governor.devices import Devices
 from features.governor.ledger import Ledger
 
@@ -156,7 +156,22 @@ class Governor:
             if wall >= RECORD_BELOW_MS:
                 self.ledger.record(component, kind, cpu, wall, size)
 
-    def policy(self, device: str | None) -> dict:
+    def gpu_of(self, known: dict, local: bool) -> dict:
+        forced = conf.number("NUXIVA_GOV_VRAM_MB", 0, 0, 262144)
+        if forced:
+            return {"vram_mb": int(forced), "kind": "forced", "source": "config"}
+        if known.get("gpu") and known["gpu"].get("renderer") is not None:
+            card = gpu.estimate(known["gpu"])
+            if local:
+                server = gpu.local_gpu.read()
+                if not server["shared"]:
+                    card = {**card, "vram_mb": server["vram_mb"], "source": "server"}
+            return card
+        if local:
+            return {**gpu.local_gpu.read(), "kind": "server"}
+        return {"vram_mb": 1024, "kind": "unknown", "source": "default"}
+
+    def policy(self, device: str | None, local: bool = False) -> dict:
         cls = self.device_class()
         forced_tier = conf.choice("NUXIVA_GOV_QUALITY", "auto", ("auto", *profile.TIERS))
         base = profile.QUALITY[cls]
@@ -168,16 +183,18 @@ class Governor:
             caps["active"] = override
         if tier == "minimal":
             caps = {"active": max(1, caps["active"] // 2), "ambient": 0}
-        return {"enabled": self.enabled(), "class": cls, "tier": tier, "max_active": caps["active"], "max_ambient": caps["ambient"],
+        card = self.gpu_of(known, local)
+        return {"gpu": card, "budget": gpu.budget(card["vram_mb"], tier, self.pressure.high),
+                "enabled": self.enabled(), "class": cls, "tier": tier, "max_active": caps["active"], "max_ambient": caps["ambient"],
                 "report": self.enabled() and conf.flag("NUXIVA_GOV_CLIENT_REPORT", True), "report_every_s": 30,
                 "server_busy": self.pressure.high}
 
-    def report(self, clean: dict) -> dict:
+    def report(self, clean: dict, local: bool = False) -> dict:
         base = profile.QUALITY[self.device_class()]
         _, changed = self.devices.apply(clean, base, time.time())
         for w in clean["widgets"]:
             self.ledger.record(f"widget:{w['id']}", "widget", w["ms"], w["ms"], w["nodes"])
-        return {**self.policy(clean["device"]), "changed": changed}
+        return {**self.policy(clean["device"], local), "changed": changed}
 
     def state(self, minutes: int = 60) -> dict:
         return {"enabled": self.enabled(), "hardware": self.hardware, "class": self.device_class(), "now": self.last,

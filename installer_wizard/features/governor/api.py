@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from access import require_admin, require_display
+from access import is_local, require_admin, require_display
 from features.governor.devices import ID_RE, clean_report
 from features.governor.service import governor
 
@@ -12,7 +12,7 @@ MAX_BODY = 32768
 @public_routes.get("/api/governor/policy")
 async def policy(request: Request, device: str = ""):
     require_display(request, "Solo dal display")
-    return governor.policy(device if ID_RE.match(device) else None)
+    return governor.policy(device if ID_RE.match(device) else None, is_local(request))
 
 
 @public_routes.post("/api/governor/report")
@@ -28,7 +28,7 @@ async def report(request: Request):
     clean = clean_report(body)
     if clean is None:
         raise HTTPException(400, "Rapporto non valido")
-    return governor.report(clean)
+    return governor.report(clean, is_local(request))
 
 
 @admin_routes.get("/api/governor/state")

@@ -14,10 +14,30 @@ class VitalsUploader(private val vault: VitalsVault) {
         .connectTimeout(5, TimeUnit.SECONDS)
         .readTimeout(8, TimeUnit.SECONDS)
         .build()
+    private val pending = ArrayDeque<VitalSample>()
+    private val lock = Any()
+
+    fun offer(samples: List<VitalSample>) {
+        if (samples.isEmpty()) return
+        synchronized(lock) {
+            pending.addAll(samples)
+            while (pending.size > MAX_PENDING) pending.removeFirst()
+        }
+    }
+
+    fun flush(): Boolean {
+        if (!vault.linked()) return true
+        while (true) {
+            val batch = synchronized(lock) { pending.take(MAX_BATCH) }
+            if (batch.isEmpty()) return true
+            if (!post(batch)) return false
+            synchronized(lock) { repeat(minOf(batch.size, pending.size)) { pending.removeFirst() } }
+        }
+    }
 
     fun send(samples: List<VitalSample>): Boolean {
-        if (samples.isEmpty() || !vault.linked()) return true
-        return samples.chunked(MAX_BATCH).all { post(it) }
+        offer(samples)
+        return flush()
     }
 
     private fun post(batch: List<VitalSample>): Boolean {
@@ -30,11 +50,14 @@ class VitalsUploader(private val vault: VitalsVault) {
             .header("Authorization", "Bearer ${vault.token}")
             .post(JSONObject().put("samples", rows).toString().toRequestBody(JSON))
             .build()
-        return runCatching { client.newCall(request).execute().use { it.isSuccessful } }.getOrDefault(false)
+        return runCatching {
+            client.newCall(request).execute().use { it.isSuccessful || it.code == 400 }
+        }.getOrDefault(false)
     }
 
     companion object {
         private const val MAX_BATCH = 60
+        private const val MAX_PENDING = 3000
         private val JSON = "application/json".toMediaType()
     }
 }

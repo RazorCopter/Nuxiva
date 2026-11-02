@@ -22,6 +22,9 @@ SERVICES = {
               "scopes": ["https://www.googleapis.com/auth/drive.metadata.readonly"]},
     "health": {"name": "Google Health", "icon": "❤️", "api": "health.googleapis.com",
                "scopes": ["https://www.googleapis.com/auth/googlehealth.health_metrics_and_measurements.readonly"]},
+    "health_activity": {"name": "Google Health: attività e sonno", "icon": "🏃", "api": "health.googleapis.com",
+                        "scopes": ["https://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly",
+                                   "https://www.googleapis.com/auth/googlehealth.sleep.readonly"]},
     "keep": {"name": "Google Keep", "icon": "📝", "api": "keep.googleapis.com", "workspace": True,
              "scopes": ["https://www.googleapis.com/auth/keep"]},
 }

@@ -7,8 +7,8 @@ SEARCH_SECONDS = 90.0
 FRESH_SECONDS = 30.0
 MAX_FOUND = 30
 MAX_NAME = 40
-HEALTH_SERVICES = {"180d", "1809", "1822"}
-VENDORS = re.compile(r"fitbit|polar|garmin|suunto|coros|whoop|oura|amazfit|zepp|mi (smart )?band|xiaomi|huawei|honor|galaxy (watch|fit|ring)|pixel watch|apple watch|withings|wahoo|scosche|magene|wear os|tickr|h10|h9|verity|forerunner|fenix|ionic|versa", re.I)
+HEALTH_SERVICES = {"180d", "1809", "1822", "1810", "181d", "181b"}
+VENDORS = re.compile(r"fitbit|polar|garmin|suunto|coros|whoop|oura|amazfit|zepp|mi (smart )?band|xiaomi|huawei|honor|galaxy (watch|fit|ring)|pixel watch|apple watch|withings|wahoo|omron|beurer|sanitas|renpho|eufy|qardio|ihealth|scosche|magene|wear os|tickr|h10|h9|verity|forerunner|fenix|ionic|versa", re.I)
 MAC = re.compile(r"^[0-9A-F]{2}(:[0-9A-F]{2}){5}$")
 
 

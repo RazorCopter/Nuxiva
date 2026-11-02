@@ -6,7 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from access import require_admin
 from features.nodes.registry import registry
 from features.people import connectors, people
-from features.people.vitals import service
+from features.people.vitals import cloud, service
+from features.people.vitals.history import history
+from features.people.vitals.model import METRICS
 from features.people.vitals.book import book
 from features.people.vitals.journal import journal
 from features.people.vitals.live import live
@@ -104,6 +106,31 @@ async def person_vitals(slug: str, _: str = Depends(require_admin)):
     now = time.time()
     snap = service.snapshot(slug, now)
     return {"devices": service.devices_view(slug, snap["values"], now), "units": service.units(), "nodes": service.capable_nodes(now), "diagnosis": service.diagnosis(now), **snap}
+
+
+@admin_routes.get("/api/people/{slug}/health")
+async def person_health(slug: str, days: int = 14, _: str = Depends(require_admin)):
+    _person(slug)
+    now = time.time()
+    span = max(7, min(30, days))
+    view = service.health_view(slug, now) or {"values": {}, "pulse": [], "trends": {}, "recovery": None, "goals": {}, "signals": [],
+                                              "sources": []}
+    trends = {m: history.trend(slug, m, span, now) for m in METRICS}
+    view["trends"] = {m: t for m, t in trends.items() if any(d["value"] is not None for d in t)}
+    view["cloud"] = {"health": cloud.ready(slug), "activity": cloud.ready(slug, cloud.ACTIVITY), **cloud.status(slug)}
+    view["devices"] = service.devices_view(slug, view["values"], now)
+    view["units"] = service.units()
+    view["groups"] = {m: spec["group"] for m, spec in METRICS.items()}
+    return view
+
+
+@admin_routes.post("/api/people/{slug}/health/sync")
+async def person_health_sync(slug: str, _: str = Depends(require_admin)):
+    _person(slug)
+    if not cloud.ready(slug):
+        raise HTTPException(409, "Google Health non collegato")
+    cloud.reset(slug)
+    return {"added": await cloud.poll(slug)}
 
 
 @admin_routes.post("/api/people/{slug}/vitals/search")

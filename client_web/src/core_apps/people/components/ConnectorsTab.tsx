@@ -5,7 +5,6 @@ import { usePeopleI18n } from '../scope';
 import { GoogleCard } from './GoogleCard';
 import { TelegramCard } from './TelegramCard';
 import { FingerprintCard } from './FingerprintCard';
-import { VitalsCard } from './VitalsCard';
 
 interface Props {
   readonly slug: string;
@@ -51,7 +50,6 @@ export const ConnectorsTab: React.FC<Props> = ({ slug, busy, run }) => {
         {state.telegram && <TelegramCard slug={slug} state={state.telegram} busy={busy} run={act} />}
         {state.google && <GoogleCard slug={slug} state={state.google} busy={busy} run={act} />}
         <FingerprintCard slug={slug} busy={busy} run={act} />
-        <VitalsCard slug={slug} busy={busy} run={act} />
       </div>
     </div>
   );

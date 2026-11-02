@@ -3,9 +3,8 @@ import time
 from state import store
 
 ALIVE = 30
-MAIN_CAP = 2
-BIG = ("l", "full")
 ROLES = ("agent", "work", "visual")
+PERSON = "person"
 WORK = frozenset({"repair_workbench", "code_view", "git_diff", "kanban_board", "document_viewer", "lavagna", "cicd_tracker",
                   "docker_matrix", "studio_3d", "viewer_3d", "thinking_tree", "text_long", "rag_sources", "system_monitor",
                   "net_topology", "firewall_logs", "os_networks", "ssh_sessions", "port_scanner", "usb_monitor", "active_tasks",
@@ -16,7 +15,7 @@ VISUAL = frozenset({"diorama", "chess_3d", "cam_stream", "live_cam", "tv_player"
 
 def role_of(item: dict) -> str:
     declared = item.get("screen_role")
-    if declared in ROLES:
+    if declared in ROLES or declared == PERSON:
         return declared
     wid = item.get("id")
     return "work" if wid in WORK else "visual" if wid in VISUAL else "agent"
@@ -116,14 +115,12 @@ class Screens:
             role = role_of(it)
             if pref in load:
                 it["screen"] = pref
-            elif not others:
+            elif not others or role == PERSON:
                 it["screen"] = main
             elif role != "agent":
                 it["screen"] = self.screen_for_role(role, screens)
-            elif it.get("size") in BIG or load[main] >= MAIN_CAP:
-                it["screen"] = lightest()
             else:
-                it["screen"] = main
+                it["screen"] = lightest()
             load[it["screen"]] += 1
         return items
 

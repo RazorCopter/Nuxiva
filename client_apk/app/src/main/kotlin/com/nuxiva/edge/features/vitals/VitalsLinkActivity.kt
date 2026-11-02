@@ -7,12 +7,14 @@ import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.health.connect.client.PermissionController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.net.URI
 
 class VitalsLinkActivity : AppCompatActivity() {
 
@@ -24,21 +26,41 @@ class VitalsLinkActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         val data: Uri? = intent?.data
         val vault = VitalsVault(this)
+        val server = data?.getQueryParameter("server").orEmpty()
+        val token = data?.getQueryParameter("token").orEmpty()
         if (data != null) {
-            val linked = data.getQueryParameter("server")?.let { server ->
-                data.getQueryParameter("token")?.let { vault.link(server, it) }
-            } ?: false
-            if (!linked) {
+            if (!VitalsVault.validServer(server) || token.isEmpty()) {
                 Toast.makeText(this, "Link Nuxiva non valido", Toast.LENGTH_LONG).show()
                 finish()
                 return
             }
+            confirm(vault, server, token)
+            return
         }
         if (!vault.linked()) {
             finish()
             return
         }
         askBluetooth()
+    }
+
+    private fun confirm(vault: VitalsVault, server: String, token: String) {
+        val host = runCatching { URI(server).host }.getOrNull().orEmpty()
+        val clear = server.startsWith("http://")
+        AlertDialog.Builder(this)
+            .setTitle("Collegare i dati della salute?")
+            .setMessage("I parametri della salute verranno inviati a $host." +
+                (if (clear) "\nAttenzione: la connessione non è cifrata (http)." else "") +
+                (if (vault.linked()) "\nIl collegamento attuale verrà sostituito." else ""))
+            .setPositiveButton("Collega") { _, _ ->
+                if (vault.link(server, token)) askBluetooth() else {
+                    Toast.makeText(this, "Link Nuxiva non valido", Toast.LENGTH_LONG).show()
+                    finish()
+                }
+            }
+            .setNegativeButton("Annulla") { _, _ -> finish() }
+            .setOnCancelListener { finish() }
+            .show()
     }
 
     private fun askBluetooth() {
