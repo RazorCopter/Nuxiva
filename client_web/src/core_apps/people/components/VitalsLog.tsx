@@ -11,7 +11,7 @@ interface Props {
 
 const TONE: Record<VitalLogEntry['level'], string> = { info: 'text-slate-700', warn: 'text-amber-800', error: 'text-rose-800' };
 const REASON = /^[a-z_]{2,32}$/;
-const CLOUD_HINTS: readonly string[] = ['api_disabled', 'health_profile_missing', 'scope_missing', 'unauthorized'];
+const CLOUD_HINTS: readonly string[] = ['api_disabled', 'health_profile_missing', 'scope_missing', 'unauthorized', 'health_grant', 'health_preview'];
 const HINTED: readonly string[] = ['no_profiles', 'connect_failed', 'scan_failed', 'cloud_error', 'search_no_nodes', 'rejected_values'];
 
 export const VitalsLog: React.FC<Props> = ({ slug, tick }) => {

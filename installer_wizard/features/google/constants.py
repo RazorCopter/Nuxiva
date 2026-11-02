@@ -20,9 +20,9 @@ SERVICES = {
                  "scopes": ["https://www.googleapis.com/auth/contacts.readonly"]},
     "drive": {"name": "Google Drive", "icon": "📁", "api": "drive.googleapis.com",
               "scopes": ["https://www.googleapis.com/auth/drive.metadata.readonly"]},
-    "health": {"name": "Google Health", "icon": "❤️", "api": "health.googleapis.com",
+    "health": {"name": "Google Health", "icon": "❤️", "api": "health.googleapis.com", "grant": "health",
                "scopes": ["https://www.googleapis.com/auth/googlehealth.health_metrics_and_measurements.readonly"]},
-    "health_activity": {"name": "Google Health: attività e sonno", "icon": "🏃", "api": "health.googleapis.com",
+    "health_activity": {"name": "Google Health: attività e sonno", "icon": "🏃", "api": "health.googleapis.com", "grant": "health",
                         "scopes": ["https://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly",
                                    "https://www.googleapis.com/auth/googlehealth.sleep.readonly"]},
     "keep": {"name": "Google Keep", "icon": "📝", "api": "keep.googleapis.com", "workspace": True, "oauth": False,
@@ -32,6 +32,21 @@ DEFAULT_SERVICES = "calendar,gmail,gmail_send,tasks,contacts,drive,health,health
 DAYS_IT = ["lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica"]
 MONTHS_IT = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre",
              "ottobre", "novembre", "dicembre"]
+
+
+MAIN = "main"
+HEALTH = "health"
+GRANTS = {MAIN: {"refresh": "refresh", "scopes": "scopes", "revoked": "revoked"},
+          HEALTH: {"refresh": "health_refresh", "scopes": "health_scopes", "revoked": "health_revoked"}}
+HEALTH_HOST = "https://health.googleapis.com/"
+
+
+def grant_of(service: str) -> str:
+    return SERVICES.get(service, {}).get("grant", MAIN)
+
+
+def grant_for_url(url: str) -> str:
+    return HEALTH if url.startswith(HEALTH_HOST) else MAIN
 
 
 def linkable(service: str) -> bool:

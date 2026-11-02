@@ -32,6 +32,9 @@
     "r_forbidden": "Accès refusé",
     "r_not_found": "Introuvable",
     "errors_one": "{{n}} erreur",
-    "errors_other": "{{n}} erreurs"
+    "errors_other": "{{n}} erreurs",
+    "r_health_grant": "Réactivez Google Health",
+    "r_health_preview": "Compte pas encore activé",
+    "r_not_linked": "Non autorisé"
   }
 }

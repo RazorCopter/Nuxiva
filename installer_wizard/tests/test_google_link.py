@@ -95,8 +95,8 @@ class ExchangeTest(unittest.IsolatedAsyncioTestCase):
             oauth = google_app.OAuthApp()
             token = mock.AsyncMock(return_value={"refresh_token": "r", "access_token": "a"})
             with mock.patch.object(google_app, "flows", flows), mock.patch.object(oauth, "token", token):
-                slug, body = await oauth.exchange(f"?state=s1&code={CODE}")
-            self.assertEqual((slug, body["refresh_token"]), ("mario", "r"))
+                slug, body, grant = await oauth.exchange(f"?state=s1&code={CODE}")
+            self.assertEqual((slug, body["refresh_token"], grant), ("mario", "r", "main"))
             self.assertEqual(token.call_args.args[0]["code_verifier"], "v1")
             self.assertEqual(flows.pending(), [])
 

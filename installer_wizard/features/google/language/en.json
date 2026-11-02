@@ -23,6 +23,7 @@
       "Copy the Client ID and Client Secret from the dialog, paste them below and press Save.",
       "Each person links their own account from the Identity Manager: open their record, Connectors, Google, pick the services and authorise. If Google shows “Google hasn't verified this app”, press “Advanced” and then “Go to Nuxiva”: this is normal for a personal app. Keep every box ticked.",
       "At the end the browser opens a page that does not load (127.0.0.1): copy the full address from the bar and paste it into Nuxiva within 30 minutes.",
+      "Google Health is authorized separately: Google does not accept health permissions together with Gmail, Calendar and the other services. After linking Google, switch on «Google Health» (and «activity and sleep»): a second authorization opens with only the health permissions.",
       "For health data the person must use the Google Health app on their phone with the same Google account and have created a profile (or migrated their Fitbit account), otherwise Google returns no data."
     ],
     "items_title": "APIs to enable",

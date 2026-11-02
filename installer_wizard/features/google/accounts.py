@@ -5,7 +5,7 @@ from config import ETC_DIR, env_get, write_env
 from sealed import SealedFile
 from state import store
 
-from features.google.constants import SERVICES, STATE_FILE
+from features.google.constants import GRANTS, SERVICES, STATE_FILE, grant_of
 from features.people import identity
 
 _store = SealedFile(ETC_DIR / "google_accounts.vault", ETC_DIR / "google.key")
@@ -54,8 +54,8 @@ class Accounts:
 
     @staticmethod
     def covered(entry: dict) -> list[str]:
-        scopes = set(entry.get("scopes", []))
-        return [s for s, d in SERVICES.items() if all(x in scopes for x in d["scopes"])]
+        held = {g: set(entry.get(keys["scopes"], [])) for g, keys in GRANTS.items()}
+        return [s for s, d in SERVICES.items() if all(x in held[grant_of(s)] for x in d["scopes"])]
 
     @staticmethod
     def granted(entry: dict) -> list[str]:

@@ -46,10 +46,10 @@ class FlowStore:
         used = {k: v for k, v in data.get("used", {}).items() if now - v < USED_TTL}
         return {"flows": flows, "used": used}
 
-    def create(self, state: str, slug: str, verifier: str) -> None:
+    def create(self, state: str, slug: str, verifier: str, grant: str = "main") -> None:
         with self._lock:
             data = self._load()
-            data["flows"][state] = {"slug": slug, "verifier": verifier, "at": time.time()}
+            data["flows"][state] = {"slug": slug, "verifier": verifier, "grant": grant, "at": time.time()}
             self._vault.save(data)
 
     def pending(self) -> list[dict]:

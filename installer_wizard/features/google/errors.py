@@ -60,7 +60,10 @@ def explain(r: httpx.Response) -> GoogleApiError:
         name = API_NAMES.get(api, api or "richiesta")
         text = f"Google: l'API «{name}» non è abilitata nel progetto Google Cloud: abilitala" + (f" da {activation}" if activation else " dalla Libreria API")
         return GoogleApiError(r.status_code, "api_disabled", text, activation, api)
-    if reason in SCOPE:
+    if "UberMint" in message or "GaiaMint" in message or reason == "DISALLOWED_OAUTH_SCOPES":
+        return GoogleApiError(r.status_code, "health_grant",
+                              "Google Health va autorizzato separatamente dagli altri servizi Google: riattiva l'interruttore di Google Health e conferma")
+    if reason in SCOPE or reason == "MISSING_OAUTH_SCOPE":
         return GoogleApiError(r.status_code, "scope_missing", "Google: permesso non concesso per questo servizio: ricollega l'account e spunta tutte le caselle")
     if reason == "ACCOUNT_NOT_LINKED" or "ACCOUNT_NOT_LINKED" in message:
         return GoogleApiError(r.status_code, "health_profile_missing",
@@ -69,6 +72,10 @@ def explain(r: httpx.Response) -> GoogleApiError:
         return GoogleApiError(r.status_code, "quota", "Google: troppe richieste in poco tempo, riprovo più tardi")
     if r.status_code == 401:
         return GoogleApiError(401, "unauthorized", "Google: accesso non valido, ricollega l'account")
+    if reason == "API_PRIVATE_PREVIEW_ACCESS_DENIED":
+        return GoogleApiError(r.status_code, "health_preview", "Google Health: questo account non è ancora abilitato all'API (anteprima privata di Google)")
+    if reason == "DATA_ACCESS_DENIED":
+        return GoogleApiError(r.status_code, "forbidden", "Google Health: Google non consente l'accesso a questi dati per questo account")
     if r.status_code == 403:
         return GoogleApiError(403, "forbidden", f"Google ha rifiutato la richiesta: {message or 'permesso mancante'}")
     if r.status_code == 404:

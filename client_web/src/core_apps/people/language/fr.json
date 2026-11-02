@@ -685,9 +685,15 @@
     "vitals_reason_quota": "trop de requêtes",
     "vitals_hint_cloud_api_disabled": "Dans le projet Google Cloud, ouvrez la Bibliothèque d'API et activez « Google Health API », puis réessayez.",
     "vitals_hint_cloud_health_profile_missing": "Sur le téléphone, ouvrez l'app Google Health avec le même compte Google et créez le profil (ou migrez le compte Fitbit).",
-    "vitals_hint_cloud_scope_missing": "Reliez à nouveau Google depuis la carte Connecteurs et laissez cochées toutes les cases Google Health.",
+    "vitals_hint_cloud_scope_missing": "Dans l'onglet Google, réactivez « Google Health » et laissez toutes ses cases cochées.",
     "vitals_hint_cloud_unauthorized": "Reliez à nouveau Google depuis la carte Connecteurs : en mode « Test », l'accès expire tous les 7 jours.",
     "gg_revoked": "Google a révoqué ou fait expirer l'autorisation (tous les 7 jours si l'app Google est en mode « Test ») : cliquez sur « Mettre à jour les autorisations » pour relier à nouveau.",
-    "gg_open_google": "Ouvrir la page Google"
+    "gg_open_google": "Ouvrir la page Google",
+    "vitals_reason_health_grant": "Google Health doit être autorisé à part",
+    "vitals_reason_health_preview": "compte non activé pour l'API",
+    "vitals_reason_forbidden": "accès refusé",
+    "vitals_reason_not_linked": "Google Health non autorisé",
+    "vitals_hint_cloud_health_grant": "Google n'accepte pas Google Health dans la même autorisation que les autres services : dans l'onglet Google, désactivez puis réactivez « Google Health » et confirmez uniquement les autorisations de santé.",
+    "vitals_hint_cloud_health_preview": "Google ouvre l'API Google Health par groupes de comptes : dès que le vôtre sera activé, la lecture démarrera seule."
   }
 }

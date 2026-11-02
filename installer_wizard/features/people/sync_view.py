@@ -17,10 +17,11 @@ def _row(key: str, state: str, age: float = 0.0, error: str = "", reason: str = 
 def _google(info: dict, tracked: dict[str, dict]) -> list[dict]:
     if not info.get("linked"):
         return []
+    health = [_row("google_health", "error", error="da ricollegare", reason="revoked")] if info.get("health_revoked") else []
     if info.get("revoked"):
-        return [_row("google", "error", error="da ricollegare", reason="revoked")]
-    rows = [r for k, r in tracked.items() if k.startswith("google")]
-    return rows or [_row("google", "running")]
+        return [_row("google", "error", error="da ricollegare", reason="revoked"), *health]
+    rows = [r for k, r in tracked.items() if k.startswith("google") and k != "google_health"]
+    return [*(rows or [_row("google", "running")]), *health]
 
 
 def _other(info: dict) -> list[dict]:
@@ -55,7 +56,7 @@ def build(slug: str, now: float | None = None) -> dict | None:
             rows += _google(info, tracked)
         elif info.get("id") != "vitals":
             rows += _other(info)
-    if "google_health" in tracked:
+    if "google_health" in tracked and not any(r["key"] == "google_health" for r in rows):
         rows.append(tracked["google_health"])
     rows += _devices(slug, now)
     if not rows:

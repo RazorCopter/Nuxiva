@@ -32,6 +32,9 @@
     "r_forbidden": "Access denied",
     "r_not_found": "Not found",
     "errors_one": "{{n}} error",
-    "errors_other": "{{n}} errors"
+    "errors_other": "{{n}} errors",
+    "r_health_grant": "Re-enable Google Health",
+    "r_health_preview": "Account not enabled yet",
+    "r_not_linked": "Not authorized"
   }
 }

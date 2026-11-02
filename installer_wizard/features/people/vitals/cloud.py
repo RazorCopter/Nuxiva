@@ -149,7 +149,7 @@ def query(data_type: str, start: datetime, end: datetime) -> str:
     return f'{field} >= "{_rfc3339(start)}" AND {field} < "{_rfc3339(end)}"'
 
 
-FATAL = {"api_disabled", "health_profile_missing", "scope_missing", "unauthorized"}
+FATAL = {"api_disabled", "health_profile_missing", "scope_missing", "unauthorized", "health_grant", "health_preview", "not_linked"}
 
 
 def _reason(exc: Exception) -> str:

@@ -18,6 +18,7 @@
       "Copia el Client ID y el Client Secret de la ventana, pégalos abajo y pulsa Guardar.",
       "Cada persona vincula su cuenta desde el Gestor de Identidades: abre su ficha, Conectores, Google, elige los servicios y autoriza. Si Google muestra «Google no ha verificado esta app», pulsa «Configuración avanzada» y luego «Ir a Nuxiva»: es normal en una app personal. Deja marcadas todas las casillas.",
       "Al final el navegador abre una página que no carga (127.0.0.1): copia la dirección completa de la barra y pégala en Nuxiva antes de 30 minutos.",
+      "Google Health se autoriza por separado: Google no acepta los permisos de salud junto con los de Gmail, Calendar y los demás servicios. Después de conectar Google, enciende «Google Health» (y «actividad y sueño»): se abre una segunda autorización solo con los permisos de salud.",
       "Para la salud la persona debe usar la app Google Health en el teléfono con la misma cuenta de Google y haber creado el perfil (o migrado la cuenta de Fitbit); si no, Google no devuelve datos."
     ],
     "items_title": "API que hay que habilitar",

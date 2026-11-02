@@ -2,7 +2,7 @@
   const KEYS = new Set(["google", "google_calendar", "google_gmail", "google_tasks", "google_health", "telegram", "band", "phone"]);
   const ICONS = { google: "sparkle", google_calendar: "calendar", google_gmail: "mail", google_tasks: "check", google_health: "fire", telegram: "chat", band: "bt", phone: "phone" };
   const STATES = new Set(["ok", "running", "waiting", "error"]);
-  const REASONS = new Set(["revoked", "unavailable", "unsupported", "timeout", "api_disabled", "scope_missing", "health_profile_missing", "quota", "unauthorized", "forbidden", "not_found"]);
+  const REASONS = new Set(["revoked", "unavailable", "unsupported", "timeout", "api_disabled", "scope_missing", "health_profile_missing", "quota", "unauthorized", "forbidden", "not_found", "health_grant", "health_preview", "not_linked"]);
 
   const row = (r, ctx) => {
     const key = KEYS.has(r.key) ? r.key : "";

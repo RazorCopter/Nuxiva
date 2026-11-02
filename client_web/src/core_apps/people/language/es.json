@@ -685,9 +685,15 @@
     "vitals_reason_quota": "demasiadas solicitudes",
     "vitals_hint_cloud_api_disabled": "En el proyecto de Google Cloud abre la Biblioteca de API y habilita «Google Health API», luego vuelve a intentarlo.",
     "vitals_hint_cloud_health_profile_missing": "En el teléfono abre la app Google Health con la misma cuenta de Google y crea el perfil (o migra la cuenta de Fitbit).",
-    "vitals_hint_cloud_scope_missing": "Vuelve a vincular Google desde la tarjeta Conectores y deja marcadas todas las casillas de Google Health.",
+    "vitals_hint_cloud_scope_missing": "En la pestaña Google vuelve a encender «Google Health» y deja marcadas todas sus casillas.",
     "vitals_hint_cloud_unauthorized": "Vuelve a vincular Google desde la tarjeta Conectores: si la app está en modo «Prueba» el acceso caduca cada 7 días.",
     "gg_revoked": "Google revocó o caducó la autorización (ocurre cada 7 días si la app de Google está en modo «Prueba»): pulsa «Actualizar permisos» para volver a vincular.",
-    "gg_open_google": "Abrir la página de Google"
+    "gg_open_google": "Abrir la página de Google",
+    "vitals_reason_health_grant": "Google Health necesita su propia autorización",
+    "vitals_reason_health_preview": "cuenta no habilitada para la API",
+    "vitals_reason_forbidden": "acceso denegado",
+    "vitals_reason_not_linked": "Google Health no autorizado",
+    "vitals_hint_cloud_health_grant": "Google no acepta Google Health en el mismo permiso que los demás servicios: en la pestaña Google apaga y vuelve a encender «Google Health» y confirma solo los permisos de salud.",
+    "vitals_hint_cloud_health_preview": "Google está abriendo la API de Google Health por grupos de cuentas: cuando la tuya esté habilitada, la lectura empezará sola."
   }
 }

@@ -6,7 +6,7 @@ import urllib.parse
 import httpx
 from config import env_get
 
-from features.google.constants import REDIRECT_URI, SERVICES, linkable
+from features.google.constants import GRANTS, HEALTH, MAIN, REDIRECT_URI, SERVICES, grant_of, linkable
 from features.google.flows import LinkError, flows, parse
 
 _HINTS = {
@@ -25,21 +25,23 @@ class OAuthApp:
     def ready(self) -> bool:
         return all(self.credentials())
 
-    def auth_url(self, slug: str, services: list[str]) -> str:
+    def auth_url(self, slug: str, services: list[str], held: list[str] | tuple = ()) -> str:
         cid, secret = self.credentials()
         if not (cid and secret):
             raise ValueError("Inserisci prima Client ID e Client Secret dell'app Google")
         services = [s for s in services if linkable(s)]
         if not services:
             raise ValueError("Scegli almeno un servizio")
-        scopes = ["openid", "email", "profile"] + [x for s in services for x in SERVICES[s]["scopes"]]
+        grant = MAIN if any(grant_of(s) == MAIN for s in services) else HEALTH
+        wanted = sorted({s for s in [*services, *held] if linkable(s) and grant_of(s) == grant})
+        scopes = (["openid", "email", "profile"] if grant == MAIN else []) + list(dict.fromkeys(x for s in wanted for x in SERVICES[s]["scopes"]))
         state, verifier = secrets.token_urlsafe(16), secrets.token_urlsafe(48)
-        flows.create(state, slug, verifier)
+        flows.create(state, slug, verifier, grant)
         challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
         return "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode({
             "client_id": cid, "response_type": "code", "redirect_uri": REDIRECT_URI, "scope": " ".join(scopes),
             "state": state, "access_type": "offline", "prompt": "consent select_account",
-            "include_granted_scopes": "true", "code_challenge": challenge, "code_challenge_method": "S256"})
+            "include_granted_scopes": "false", "code_challenge": challenge, "code_challenge_method": "S256"})
 
     async def token(self, data: dict) -> dict:
         cid, secret = self.credentials()
@@ -55,7 +57,7 @@ class OAuthApp:
             raise LinkError(f"Google: {err}") if code in _HINTS else ValueError(f"Google: {err}")
         return body
 
-    async def exchange(self, pasted: str, slug_hint: str = "") -> tuple[str, dict]:
+    async def exchange(self, pasted: str, slug_hint: str = "") -> tuple[str, dict, str]:
         found = parse(pasted)
         if found.error:
             raise LinkError("Autorizzazione negata su Google" if found.error == "access_denied"
@@ -70,7 +72,8 @@ class OAuthApp:
         if not body.get("refresh_token"):
             raise LinkError("Google non ha rilasciato il token di rinnovo: rimuovi l'accesso di Nuxiva da "
                             "myaccount.google.com/permissions e ricollega")
-        return flow["slug"], body
+        grant = flow.get("grant") if flow.get("grant") in GRANTS else MAIN
+        return flow["slug"], body, grant
 
     @staticmethod
     async def revoke(token: str) -> None:

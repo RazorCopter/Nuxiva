@@ -9,7 +9,7 @@ from state import store
 from features.google.accounts import accounts
 from features.google.app import oauth
 from features.google.flows import flows
-from features.google.constants import DEFAULT_SERVICES, REDIRECT_URI, SERVICES, linkable, log
+from features.google.constants import DEFAULT_SERVICES, GRANTS, HEALTH, REDIRECT_URI, SERVICES, linkable, log
 from features.google.notify import notifier
 from features.google.session import Session
 from features.google.timeparse import event_json
@@ -44,19 +44,25 @@ class Google:
     def auth_url(self, slug: str, services: list[str]) -> str:
         if not people.load(slug):
             raise ValueError("Persona sconosciuta")
-        return oauth.auth_url(slug, services or DEFAULT_SERVICES.split(","))
+        return oauth.auth_url(slug, services or DEFAULT_SERVICES.split(","), accounts.granted(accounts.get(slug) or {}))
 
     async def link(self, pasted: str, slug_hint: str = "") -> tuple[str, str]:
-        slug, body = await oauth.exchange(pasted, slug_hint)
+        slug, body, grant = await oauth.exchange(pasted, slug_hint)
+        keys = GRANTS[grant]
         before = set(accounts.covered(accounts.get(slug) or {}))
-        accounts.put(slug, {"refresh": body["refresh_token"], "scopes": body.get("scope", "").split(),
-                            "linked_at": time.time(), "revoked": False})
+        accounts.put(slug, {keys["refresh"]: body["refresh_token"], keys["scopes"]: body.get("scope", "").split(),
+                            "linked_at": time.time(), keys["revoked"]: False})
         for service in set(accounts.covered(accounts.get(slug) or {})) - before:
             accounts.set_off(slug, service, False)
-        session = Session(slug)
-        session.access_token = body["access_token"]
-        session.expires_at = time.time() + body.get("expires_in", 3600) - 60
+        session = self.sessions.get(slug) or Session(slug)
+        session.tokens[grant] = (body["access_token"], time.time() + body.get("expires_in", 3600) - 60)
         self.sessions[slug] = session
+        who = (people.load(slug) or {}).get("name", slug)
+        if grant == HEALTH:
+            from features.people.vitals import cloud
+            cloud.reset(slug)
+            store.event("INFO", f"Google Health autorizzato per {who}", "google")
+            return slug, (accounts.get(slug) or {}).get("email", "")
         try:
             me = await session._get("https://openidconnect.googleapis.com/v1/userinfo")
         except (httpx.HTTPError, ValueError) as exc:
@@ -64,7 +70,6 @@ class Google:
             me = {}
         if me:
             accounts.put(slug, {"email": str(me.get("email", ""))[:200], "name": str(me.get("name", ""))[:120]})
-        who = (people.load(slug) or {}).get("name", slug)
         store.event("INFO", f"Google collegato per {who} ({me.get('email', '')}): "
                             f"{', '.join(SERVICES[s]['name'] for s in session.granted())}", "google")
         return slug, me.get("email", "")
@@ -72,9 +77,11 @@ class Google:
     async def unlink(self, slug: str) -> None:
         entry = accounts.remove(slug)
         self.sessions.pop(slug, None)
-        if entry and entry.get("refresh"):
+        for token in [entry.get(keys["refresh"]) for keys in GRANTS.values()] if entry else []:
+            if not token:
+                continue
             try:
-                await oauth.revoke(entry["refresh"])
+                await oauth.revoke(token)
             except httpx.HTTPError as exc:
                 log.warning("Revoca del token Google non confermata: %s", exc)
 
@@ -107,8 +114,9 @@ class Google:
         entry = accounts.get(slug) or {}
         session = self.sessions.get(slug)
         return {"slug": slug, "name": name, "role": role,
-                "linked": bool(entry.get("refresh")), "email": entry.get("email", ""),
+                "linked": bool(entry.get("refresh") or entry.get("health_refresh")), "email": entry.get("email", ""),
                 "granted": accounts.granted(entry) if entry else [], "revoked": bool(entry.get("revoked")),
+                "health_revoked": bool(entry.get("health_refresh") and entry.get("health_revoked")),
                 "status": "da ricollegare" if entry.get("revoked") else session.status if session else ("collegato" if entry else "non collegato"),
                 "unread": session.unread if session else None}
 
@@ -176,6 +184,8 @@ class Google:
         session = self.for_profile(profile)
         slug = profile["slug"]
         if not session:
+            return
+        if not session.info.get("refresh"):
             return
         if session.info.get("revoked"):
             board.fail(slug, "google", "da ricollegare", reason="revoked")
