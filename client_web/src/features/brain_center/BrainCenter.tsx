@@ -8,6 +8,7 @@ import { ContextsSection } from './sections/contexts/ContextsSection';
 import { FunctionsSection } from './sections/functions/FunctionsSection';
 import { LocalModelsSection } from './sections/local_models/LocalModelsSection';
 import { OverviewSection } from './sections/overview/OverviewSection';
+import { PrivacySection } from './sections/privacy/PrivacySection';
 import { ProvidersSection } from './sections/providers/ProvidersSection';
 import { UsageSection } from './sections/usage/UsageSection';
 
@@ -17,6 +18,7 @@ const SECTIONS: Readonly<Record<SectionId, React.FC<{ readonly onNavigate: (id: 
   providers: ProvidersSection,
   local_models: LocalModelsSection,
   usage: UsageSection,
+  privacy: PrivacySection,
   functions: FunctionsSection,
   advanced: AdvancedSection,
 };

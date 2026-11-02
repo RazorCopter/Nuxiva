@@ -15,6 +15,7 @@ from features.brain import assignments_api, bridge, cervello_state, chains_api
 from features.brain.free_router.api import admin_routes as free_matrix_routes
 from features.brain.decision_lab.api import admin_routes as decision_lab_routes, public_routes as decision_lab_public_routes
 from features.brain.usage import api as usage_api
+from features.brain.privacy import api as privacy_api
 from features.brain.brains import brains
 from features.brain.configuration import bound_selection
 from features.brain.residency import rebalance
@@ -30,6 +31,7 @@ admin_routes.include_router(chains_api.admin_routes)
 admin_routes.include_router(free_matrix_routes)
 admin_routes.include_router(decision_lab_routes)
 admin_routes.include_router(usage_api.admin_routes)
+admin_routes.include_router(privacy_api.admin_routes)
 public_routes = assignments_api.public_routes
 public_routes.include_router(decision_lab_public_routes)
 public_routes.include_router(usage_api.public_routes)

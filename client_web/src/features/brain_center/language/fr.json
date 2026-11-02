@@ -57,6 +57,7 @@
     "role_coder": "Sites et applications",
     "role_coder_hint": "Conçoit et écrit le code de sites et d'applications.",
     "role_modello3d": "Modèles 3D",
-    "role_modello3d_hint": "Crée des objets en trois dimensions."
+    "role_modello3d_hint": "Crée des objets en trois dimensions.",
+    "nav_privacy": "Confidentialité"
   }
 }

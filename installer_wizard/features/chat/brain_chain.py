@@ -9,6 +9,7 @@ from tasks import background
 
 from features.brain import stages
 from features.brain.brains import brains
+from features.brain.privacy.gate import PrivacyBlocked, privacy_gate
 from features.brain.components import LimbicModulator, SpikingNeuron
 from features.brain.residency import touch
 from features.brain.trace import trace
@@ -212,6 +213,13 @@ async def ask(query: str, device: str, context: dict, route: dict, core_local: C
         local_models = [model for model in model_refs if not is_cloud(model)]
         model_refs = list(dict.fromkeys([*free_models, *local_models]))
         route = {**route, "models": model_refs, "free_matrix_active": True, "task_pool": pool}
+    level = privacy_gate.level((query, context.get("dialogue")), declared=route.get("privacy", ""),
+                               personal=bool(context.get("long_term")))
+    try:
+        model_refs = privacy_gate.screen(model_refs, level, route.get("person", ""))
+    except PrivacyBlocked as exc:
+        raise NoBrainAvailable(str(exc)) from exc
+    route = {**route, "models": model_refs}
     candidates = _candidates(model_refs)
     if not candidates:
         raise NoBrainAvailable("nessun cervello configurato")
@@ -247,6 +255,8 @@ async def ask(query: str, device: str, context: dict, route: dict, core_local: C
         for error in thought.get("errors") or []:
             store.event("WARN", f"Cervello non disponibile: {error}", "core")
         raise NoBrainAvailable("; ".join(thought.get("errors") or []) or "nessun cervello ha risposto")
+    served = thought.get("target")
+    privacy_gate.served(served[0] if isinstance(served, list) and served else str(served or ""), level)
     if parallel and thought.get("kind") == "cloud":
         conversation.remember(device, query, raw["speech_output"])
     raw["result_data"] = {**raw.get("result_data", {}), "limbic": thought.get("limbic_snapshot"), "latency_ms": thought.get("latency_ms"),

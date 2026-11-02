@@ -65,6 +65,7 @@ async def _core_call(query: str, device: str, speech_lang: dict) -> dict:
         context["long_term"] = long_term
     route = await brains.route(query)
     route["lang"] = speech_lang["lang"]
+    route["person"] = acting().slug if acting().role != "system" else ""
     rule = languages.instruction(speech_lang["lang"], speech_lang["teach"])
     if rule:
         context["reply_language"] = rule
@@ -106,6 +107,9 @@ async def _core_call(query: str, device: str, speech_lang: dict) -> dict:
     try:
         return await brain_chain.ask(query, device, context, route, core_local)
     except brain_chain.NoBrainAvailable as exc:
+        if str(exc).startswith("privacy_blocked"):
+            store.event("WARN", f"Richiesta trattenuta dalla privacy del Cervello: {exc}", "core")
+            raise HTTPException(503, "privacy_blocked") from exc
         store.event("ERROR", f"Nessun cervello ha risposto: {exc}", "core")
         raise HTTPException(502, "Nessun cervello disponibile: controlla modelli locali e chiavi cloud")
 

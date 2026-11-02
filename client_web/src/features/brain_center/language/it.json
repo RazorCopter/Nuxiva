@@ -57,6 +57,7 @@
     "role_coder": "Siti e applicazioni",
     "role_coder_hint": "Progetta e scrive codice per siti e app.",
     "role_modello3d": "Modelli 3D",
-    "role_modello3d_hint": "Crea oggetti tridimensionali."
+    "role_modello3d_hint": "Crea oggetti tridimensionali.",
+    "nav_privacy": "Privacy"
   }
 }

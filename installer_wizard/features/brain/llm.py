@@ -11,6 +11,7 @@ from tasks import background
 from features.brain import scope
 from features.brain.assignments import load_synaptic_weights, save_synaptic_weights
 from features.brain.brains import brains
+from features.brain.privacy.gate import PrivacyBlocked, privacy_gate
 from features.brain.trace import trace
 from features.brain.usage.ledger import usage_ledger
 from features.brain.residency import keep_alive, touch
@@ -95,7 +96,7 @@ def _govern(system: str) -> str:
 
 async def generate(prompt: str, *, as_json: bool = False, max_tokens: int = 500, temperature: float = 0.1,
                    kind: str = "deep", system: str = "", prefer: list[str] | None = None, timeout: float = 240,
-                   govern: bool = True, component: str = ""):
+                   govern: bool = True, component: str = "", privacy: str = "", person: str = ""):
     if component:
         from features.brain.routing import assignment_service
         tuned = assignment_service.tuning(component)
@@ -114,6 +115,11 @@ async def generate(prompt: str, *, as_json: bool = False, max_tokens: int = 500,
     if free_matrix_active:
         local_models = [model for model in models if scope.origin(model) != scope.CLOUD]
         models = list(dict.fromkeys([*free_models, *local_models]))
+    level = privacy_gate.level((prompt,), component=component, declared=privacy)
+    try:
+        models = privacy_gate.screen(models, level, person)
+    except PrivacyBlocked as exc:
+        raise BrainUnavailable(str(exc)) from exc
     call = trace.begin(component or kind, "richiesta di ragionamento" if kind == "deep" else "richiesta veloce", models)
     for model in models:
         if free_matrix_active and model.startswith("cloud:openrouter/"):
@@ -158,6 +164,7 @@ async def generate(prompt: str, *, as_json: bool = False, max_tokens: int = 500,
         if free_matrix_active and model.startswith("cloud:openrouter/"):
             succeeded(model, model.removeprefix("cloud:openrouter/"), elapsed, pool_for(model, pool))
         brains.record(model, elapsed, True, kind)
+        privacy_gate.served(model, level)
         trace.finish(call, model, elapsed, text)
         background(touch(model))
         if component:
@@ -186,6 +193,8 @@ async def generate_branches(
     timeout: float = 240,
     govern: bool = True,
     component: str = "",
+    privacy: str = "",
+    person: str = "",
 ) -> list[Any]:
     if n_branches <= 1:
         single = await generate(
@@ -199,6 +208,8 @@ async def generate_branches(
             timeout=timeout,
             govern=govern,
             component=component,
+            privacy=privacy,
+            person=person,
         )
         return [single]
     tasks = [
@@ -214,6 +225,8 @@ async def generate_branches(
                 timeout=timeout,
                 govern=govern,
                 component=component,
+                privacy=privacy,
+                person=person,
             )
         )
         for i in range(min(n_branches, 8))

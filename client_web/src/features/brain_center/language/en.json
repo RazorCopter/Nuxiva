@@ -57,6 +57,7 @@
     "role_coder": "Websites and apps",
     "role_coder_hint": "Designs and writes code for websites and apps.",
     "role_modello3d": "3D models",
-    "role_modello3d_hint": "Creates three-dimensional objects."
+    "role_modello3d_hint": "Creates three-dimensional objects.",
+    "nav_privacy": "Privacy"
   }
 }
