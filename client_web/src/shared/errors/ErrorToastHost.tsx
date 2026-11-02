@@ -157,6 +157,7 @@ const KNOWN_CODES = new Set([
   'people_mood_failed',
   'people_wellbeing_failed',
   'people_associate_failed',
+  'fullscreen_toggle_failed',
 ]);
 
 export const ErrorToastHost: React.FC = () => {

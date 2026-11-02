@@ -20,6 +20,7 @@ import { useWorkbenchAutoLaunch } from '../apps/repair_workbench/hooks/useWorkbe
 import { LiveCaptionsOverlay } from '../features/live_captions';
 import { NetworkFlyout } from './tray/network/NetworkFlyout';
 import { BluetoothFlyout } from './tray/bluetooth/BluetoothFlyout';
+import { FullscreenToggle } from './fullscreen/FullscreenToggle';
 
 export const AppShell: React.FC = () => {
   const { user, signOut } = useAuthenticatedSession();
@@ -131,6 +132,7 @@ export function WebOSDesktop({ user, onSignOut }: { user: string; onSignOut: () 
           ))}
         </div>
         {windows.map(entry => <OSWindowFrame key={entry.id} entry={entry} />)}
+        <FullscreenToggle />
         {context && (
           <div className="os-context-menu" style={{ left: Math.max(0, context.x), top: Math.max(0, context.y) }} role="menu">
             <button role="menuitem" onClick={() => { setLauncher(true); setContext(null); }}>{t('os_applications')}</button>

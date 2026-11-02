@@ -311,3 +311,9 @@
   .os-app-sidebar { width:100%; max-height:10rem; border-right:0; border-bottom:1px solid #e2e8f0; }
   .os-app-inspector { width:100%; border-left:0; border-top:1px solid #e2e8f0; box-shadow:none; }
 }
+
+.webos .os-desktop { --os-desk-cell-w:6.4rem; --os-desk-cell-h:6.6rem; display:grid; grid-auto-flow:column; grid-template-rows:repeat(auto-fill,var(--os-desk-cell-h)); grid-auto-columns:var(--os-desk-cell-w); grid-template-columns:none; align-content:start; justify-content:start; gap:.35rem .5rem; height:100%; box-sizing:border-box; padding:1rem 1rem 1.1rem; overflow-x:auto; overflow-y:hidden; overscroll-behavior:contain; scroll-snap-type:x proximity; }
+.webos .os-desktop button { width:100%; height:100%; box-sizing:border-box; justify-content:flex-start; padding:.55rem .3rem .4rem; scroll-snap-align:start; }
+.webos .os-desktop button>span { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; overflow:hidden; max-width:100%; text-align:center; text-shadow:0 1px 2px #ffffffb0; }
+@media(max-height:32rem) { .webos .os-desktop { --os-desk-cell-h:5.9rem; padding-block:.6rem; } .webos .os-desktop button { gap:.35rem; padding-block:.4rem .3rem; } .webos .os-desktop .os-icon-lg { width:2.3rem; height:2.3rem; } }
+@media(max-width:45rem) { .webos .os-desktop { --os-desk-cell-w:5.4rem; --os-desk-cell-h:6.5rem; padding:.8rem .5rem; } .webos .os-desktop button { font-size:.75rem; } }
