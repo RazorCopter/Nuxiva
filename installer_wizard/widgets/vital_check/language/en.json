@@ -33,9 +33,6 @@
     "measuring": "measuring",
     "src_device": "From your device",
     "src_camera": "From the webcam",
-    "not_medical": "Informational estimate, not medical",
-    "say_camera": "Keep still and look at the webcam for a few seconds, breathing normally.",
-    "say_done": "Done. Your heart rate is {{bpm}} beats per minute.",
-    "say_done_full": "Done. Heart rate {{bpm}} per minute, breathing {{rpm}} breaths per minute."
+    "not_medical": "Informational estimate, not medical"
   }
 }

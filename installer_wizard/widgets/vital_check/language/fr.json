@@ -33,9 +33,6 @@
     "measuring": "mesure",
     "src_device": "Depuis l'appareil",
     "src_camera": "Depuis la webcam",
-    "not_medical": "Estimation informative, non médicale",
-    "say_camera": "Restez immobile et regardez la webcam quelques secondes, en respirant normalement.",
-    "say_done": "Terminé. Votre pouls est de {{bpm}} par minute.",
-    "say_done_full": "Terminé. Pouls {{bpm}} par minute, respiration {{rpm}} par minute."
+    "not_medical": "Estimation informative, non médicale"
   }
 }

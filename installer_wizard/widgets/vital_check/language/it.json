@@ -33,9 +33,6 @@
     "measuring": "misuro",
     "src_device": "Dal dispositivo",
     "src_camera": "Dalla webcam",
-    "not_medical": "Stima informativa, non medica",
-    "say_camera": "Resta immobile e guarda la webcam per qualche secondo, respirando normalmente.",
-    "say_done": "Fatto. Il battito è di {{bpm}} al minuto.",
-    "say_done_full": "Fatto. Battito {{bpm}} al minuto, respiro {{rpm}} atti al minuto."
+    "not_medical": "Stima informativa, non medica"
   }
 }

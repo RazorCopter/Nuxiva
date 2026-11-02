@@ -3,7 +3,6 @@
   const ICON = { greet: "user", device: "bt", camera: "eye", done: "check", failed: "alert" };
   const STEPS = { device: ["d_search", "d_connect", "d_read"], camera: ["c_still", "c_look", "c_breathe"] };
   const R = 52, C = 2 * Math.PI * R;
-  const spoken = new Set();
 
   const value = (v, lo, hi, ctx) => {
     const n = ctx.num(v);
@@ -57,15 +56,6 @@
     return `<span class="vc-glyph" aria-hidden="true">${ctx.icon(ICON[d.phase])}</span>`;
   };
 
-  const say = (d, ctx) => {
-    const key = `${d.session}|${d.phase}`;
-    if (!d.session || spoken.has(key) || !["camera", "done"].includes(d.phase)) return;
-    spoken.add(key);
-    if (spoken.size > 40) spoken.delete(spoken.values().next().value);
-    const text = d.phase === "camera" ? ctx.t("say_camera") : d.heart !== null ? ctx.t(d.breath !== null ? "say_done_full" : "say_done", { bpm: d.heart, rpm: d.breath }) : "";
-    if (text) ctx.speak(text);
-  };
-
   NuxivaDesk.register("vital_check", {
     render(el, raw, ctx) {
       const d = parse(raw, ctx);
@@ -87,7 +77,6 @@
             ${d.phase === "done" ? `<p class="vc-note">${ctx.esc(ctx.t(d.source === "device" ? "src_device" : "src_camera"))} · ${ctx.esc(ctx.t("not_medical"))}</p>` : ""}
           </div>
         </div>`;
-      say(d, ctx);
     },
   });
 })();

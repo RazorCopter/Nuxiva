@@ -33,9 +33,6 @@
     "measuring": "midiendo",
     "src_device": "Del dispositivo",
     "src_camera": "De la webcam",
-    "not_medical": "Estimación informativa, no médica",
-    "say_camera": "No te muevas y mira la webcam unos segundos, respirando con normalidad.",
-    "say_done": "Listo. Tu pulso es de {{bpm}} por minuto.",
-    "say_done_full": "Listo. Pulso {{bpm}} por minuto, respiración {{rpm}} por minuto."
+    "not_medical": "Estimación informativa, no médica"
   }
 }
