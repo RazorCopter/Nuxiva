@@ -39,14 +39,31 @@ def localize_feature(manifest: dict, language: str | None) -> dict:
     return result
 
 
+def _text(value, limit: int) -> str:
+    return value[:limit] if isinstance(value, str) else ""
+
+
+def _https(value) -> str:
+    return value[:300] if isinstance(value, str) and value.startswith("https://") else ""
+
+
 def _guide(raw) -> dict | None:
     if not isinstance(raw, dict):
         return None
-    steps = [s[:400] for s in raw.get("steps", []) if isinstance(s, str)][:12] if isinstance(raw.get("steps"), list) else []
+    steps = [s[:500] for s in raw.get("steps", []) if isinstance(s, str)][:16] if isinstance(raw.get("steps"), list) else []
     links = []
     for link in raw.get("links", []) if isinstance(raw.get("links"), list) else []:
-        if isinstance(link, dict) and isinstance(link.get("label"), str) and isinstance(link.get("url"), str) and link["url"].startswith("https://"):
-            links.append({"label": link["label"][:80], "url": link["url"][:300]})
+        if isinstance(link, dict) and isinstance(link.get("label"), str) and _https(link.get("url")):
+            links.append({"label": link["label"][:80], "url": _https(link["url"])})
+    items = []
+    for item in raw.get("items", []) if isinstance(raw.get("items"), list) else []:
+        if isinstance(item, dict) and _text(item.get("label"), 80):
+            items.append({"label": _text(item["label"], 80), "detail": _text(item.get("detail"), 200), "url": _https(item.get("url"))})
+    blocks = []
+    for block in raw.get("copy", []) if isinstance(raw.get("copy"), list) else []:
+        if isinstance(block, dict) and _text(block.get("text"), 4000):
+            blocks.append({"label": _text(block.get("label"), 120), "text": _text(block["text"], 4000)})
     if not steps and not links:
         return None
-    return {"title": str(raw.get("title", ""))[:80], "steps": steps, "links": links[:8], "note": str(raw.get("note", ""))[:400]}
+    return {"title": str(raw.get("title", ""))[:80], "steps": steps, "links": links[:8], "note": str(raw.get("note", ""))[:600],
+            "items_title": _text(raw.get("items_title"), 120), "items": items[:16], "copy": blocks[:3]}

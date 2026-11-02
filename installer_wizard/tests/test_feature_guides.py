@@ -28,6 +28,23 @@ class GuideTest(unittest.TestCase):
             secrets = [s for s in settings if s["type"] in ("secret", "text") and s["key"].startswith(("NUXIVA_TELEGRAM", "NUXIVA_GOOGLE_CLIENT"))]
             self.assertTrue(all(s.get("help") for s in secrets), feature)
 
+    def test_google_guide_lists_every_api_and_scope(self):
+        from features.google.constants import SERVICES
+        for lang in ("it", "en", "fr", "es"):
+            guide = localize_feature(manifest("google"), lang)["guide"]
+            urls = " ".join(item["url"] for item in guide["items"])
+            scopes = " ".join(block["text"] for block in guide["copy"])
+            for service in SERVICES.values():
+                self.assertIn(service["api"], urls, (lang, service["api"]))
+                for scope in service["scopes"]:
+                    self.assertIn(scope, scopes, (lang, scope))
+
+    def test_unsafe_items_and_copy_blocks_are_dropped(self):
+        from feature_localization import _guide
+        out = _guide({"steps": ["a"], "items": [{"label": "x", "url": "javascript:1"}, {"detail": "no label"}], "copy": [{"label": "c", "text": ""}, {"label": "d", "text": "ok"}]})
+        self.assertEqual(out["items"], [{"label": "x", "detail": "", "url": ""}])
+        self.assertEqual(out["copy"], [{"label": "d", "text": "ok"}])
+
     def test_unsafe_links_and_bad_shapes_are_dropped(self):
         from feature_localization import _guide
         out = _guide({"steps": ["a", 3], "links": [{"label": "x", "url": "javascript:alert(1)"}, {"label": "ok", "url": "https://t.me/BotFather"}, "x"]})

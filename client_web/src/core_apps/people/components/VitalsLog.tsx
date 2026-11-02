@@ -10,11 +10,23 @@ interface Props {
 }
 
 const TONE: Record<VitalLogEntry['level'], string> = { info: 'text-slate-700', warn: 'text-amber-800', error: 'text-rose-800' };
+const REASON = /^[a-z_]{2,32}$/;
+const CLOUD_HINTS: readonly string[] = ['api_disabled', 'health_profile_missing', 'scope_missing', 'unauthorized'];
 const HINTED: readonly string[] = ['no_profiles', 'connect_failed', 'scan_failed', 'cloud_error', 'search_no_nodes', 'rejected_values'];
 
 export const VitalsLog: React.FC<Props> = ({ slug, tick }) => {
   const { t, lang } = usePeopleI18n();
   const [rows, setRows] = useState<readonly VitalLogEntry[]>([]);
+  const reasonText = (reason: unknown) => {
+    const code = typeof reason === 'string' && REASON.test(reason) ? reason : '';
+    const key = `vitals_reason_${code}`;
+    const text = code ? t(key) : '';
+    return text && text !== key ? text : code;
+  };
+  const hintKey = (row: VitalLogEntry) => {
+    const code = row.params.reason;
+    return row.code === 'cloud_error' && typeof code === 'string' && CLOUD_HINTS.includes(code) ? `vitals_hint_cloud_${code}` : `vitals_hint_${row.code}`;
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -37,8 +49,8 @@ export const VitalsLog: React.FC<Props> = ({ slug, tick }) => {
           {rows.map((row, i) => (
             <li key={`${row.at}-${i}`} className={TONE[row.level]}>
               <span className="mr-2 font-mono text-slate-500">{new Date(row.at * 1000).toLocaleTimeString(lang)}</span>
-              {t(`vitals_log_${row.code}`, row.params)}
-              {HINTED.includes(row.code) && <span className="block pl-14 text-slate-600">{t(`vitals_hint_${row.code}`)}</span>}
+              {t(`vitals_log_${row.code}`, { ...row.params, reason: reasonText(row.params.reason) })}
+              {HINTED.includes(row.code) && <span className="block pl-14 text-slate-600">{t(hintKey(row))}</span>}
             </li>
           ))}
         </ul>

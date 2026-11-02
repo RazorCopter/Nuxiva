@@ -18,6 +18,9 @@ export interface FeatureGuide {
   readonly steps: readonly string[];
   readonly links: readonly { readonly label: string; readonly url: string }[];
   readonly note: string;
+  readonly items_title?: string;
+  readonly items?: readonly { readonly label: string; readonly detail: string; readonly url: string }[];
+  readonly copy?: readonly { readonly label: string; readonly text: string }[];
 }
 
 export interface FeatureRow {

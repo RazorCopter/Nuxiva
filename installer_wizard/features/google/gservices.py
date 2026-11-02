@@ -49,15 +49,20 @@ class Google:
         slug, body = await oauth.exchange(pasted, slug_hint)
         before = set(accounts.covered(accounts.get(slug) or {}))
         accounts.put(slug, {"refresh": body["refresh_token"], "scopes": body.get("scope", "").split(),
-                            "linked_at": time.time()})
+                            "linked_at": time.time(), "revoked": False})
         for service in set(accounts.covered(accounts.get(slug) or {})) - before:
             accounts.set_off(slug, service, False)
         session = Session(slug)
         session.access_token = body["access_token"]
         session.expires_at = time.time() + body.get("expires_in", 3600) - 60
         self.sessions[slug] = session
-        me = await session._get("https://openidconnect.googleapis.com/v1/userinfo")
-        accounts.put(slug, {"email": me.get("email", ""), "name": me.get("name", "")})
+        try:
+            me = await session._get("https://openidconnect.googleapis.com/v1/userinfo")
+        except (httpx.HTTPError, ValueError) as exc:
+            log.warning("Profilo Google di %s non letto dopo il collegamento: %s", slug, exc)
+            me = {}
+        if me:
+            accounts.put(slug, {"email": str(me.get("email", ""))[:200], "name": str(me.get("name", ""))[:120]})
         who = (people.load(slug) or {}).get("name", slug)
         store.event("INFO", f"Google collegato per {who} ({me.get('email', '')}): "
                             f"{', '.join(SERVICES[s]['name'] for s in session.granted())}", "google")
@@ -102,8 +107,8 @@ class Google:
         session = self.sessions.get(slug)
         return {"slug": slug, "name": name, "role": role,
                 "linked": bool(entry.get("refresh")), "email": entry.get("email", ""),
-                "granted": accounts.granted(entry) if entry else [],
-                "status": session.status if session else ("collegato" if entry else "non collegato"),
+                "granted": accounts.granted(entry) if entry else [], "revoked": bool(entry.get("revoked")),
+                "status": "da ricollegare" if entry.get("revoked") else session.status if session else ("collegato" if entry else "non collegato"),
                 "unread": session.unread if session else None}
 
     @staticmethod
@@ -168,7 +173,7 @@ class Google:
 
     async def _refresh(self, profile: dict, minutes: int) -> None:
         session = self.for_profile(profile)
-        if not session:
+        if not session or session.info.get("revoked"):
             return
         try:
             await notifier.brief(profile, session)

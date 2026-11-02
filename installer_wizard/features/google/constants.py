@@ -28,7 +28,7 @@ SERVICES = {
     "keep": {"name": "Google Keep", "icon": "📝", "api": "keep.googleapis.com", "workspace": True,
              "scopes": ["https://www.googleapis.com/auth/keep"]},
 }
-DEFAULT_SERVICES = "calendar,gmail,gmail_send,tasks,contacts,drive"
+DEFAULT_SERVICES = "calendar,gmail,gmail_send,tasks,contacts,drive,health,health_activity"
 DAYS_IT = ["lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica"]
 MONTHS_IT = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre",
              "ottobre", "novembre", "dicembre"]

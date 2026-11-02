@@ -540,6 +540,18 @@
     "id_back_person": "Torna a {name}",
     "id_back_all": "Tutte le identità",
     "id_known_since": "conosciuta da {when}",
-    "id_auto_hint": "{assistant} aggiunge da solo a questa scheda quello che impara su questa persona: ricordi, gusti, abitudini, stati d'animo e parametri vitali restano associati a lei nel tempo."
+    "id_auto_hint": "{assistant} aggiunge da solo a questa scheda quello che impara su questa persona: ricordi, gusti, abitudini, stati d'animo e parametri vitali restano associati a lei nel tempo.",
+    "vitals_reason_api_disabled": "API Google Health non abilitata",
+    "vitals_reason_health_profile_missing": "profilo Google Health mancante",
+    "vitals_reason_scope_missing": "permesso non concesso",
+    "vitals_reason_unauthorized": "accesso scaduto",
+    "vitals_reason_network": "rete non raggiungibile",
+    "vitals_reason_quota": "troppe richieste",
+    "vitals_hint_cloud_api_disabled": "Nel progetto Google Cloud apri la Libreria API e abilita «Google Health API», poi riprova.",
+    "vitals_hint_cloud_health_profile_missing": "Sul telefono apri l'app Google Health con lo stesso account Google e crea il profilo (o migra l'account Fitbit).",
+    "vitals_hint_cloud_scope_missing": "Ricollega Google dalla scheda Connettori e lascia spuntate tutte le caselle di Google Health.",
+    "vitals_hint_cloud_unauthorized": "Ricollega Google dalla scheda Connettori: se l'app è in modalità «Test» l'accesso scade ogni 7 giorni.",
+    "gg_revoked": "Google ha revocato o fatto scadere l'autorizzazione (succede ogni 7 giorni se l'app Google è in modalità «Test»): premi «Aggiorna i permessi» per ricollegare.",
+    "gg_open_google": "Apri la pagina di Google"
   }
 }

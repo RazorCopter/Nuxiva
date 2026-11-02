@@ -9,9 +9,10 @@ interface Props {
   readonly available: boolean;
   readonly busy: string | null;
   readonly run: (key: string, task: () => Promise<unknown>, code: string) => Promise<boolean>;
+  readonly onAuth: (load: () => Promise<string>, key: string) => Promise<void>;
 }
 
-export const GoogleServices: React.FC<Props> = ({ slug, services, linked, available, busy, run }) => {
+export const GoogleServices: React.FC<Props> = ({ slug, services, linked, available, busy, run, onAuth }) => {
   const { t } = usePeopleI18n();
 
   const toggle = async (service: GoogleService) => {
@@ -19,13 +20,7 @@ export const GoogleServices: React.FC<Props> = ({ slug, services, linked, availa
       await run(`gg-svc:${service.id}`, () => googleDisableService(slug, service.id), 'people_connectors_failed');
       return;
     }
-    let url = '';
-    const ok = await run(`gg-svc:${service.id}`, async () => {
-      url = await googleEnableService(slug, service.id);
-    }, 'people_connectors_failed');
-    if (ok && url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
+    await onAuth(() => googleEnableService(slug, service.id), `gg-svc:${service.id}`);
   };
 
   return (

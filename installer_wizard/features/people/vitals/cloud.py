@@ -127,6 +127,16 @@ DAILY = (
 )
 
 
+FATAL = {"api_disabled", "health_profile_missing", "scope_missing", "unauthorized"}
+
+
+def _reason(exc: Exception) -> str:
+    from features.google.errors import GoogleApiError
+    if isinstance(exc, GoogleApiError):
+        return exc.reason
+    return "network" if isinstance(exc, httpx.HTTPError) else "error"
+
+
 def ready(slug: str, service: str = SERVICE) -> bool:
     from features.google.gservices import google
     session = google.session(slug)
@@ -152,7 +162,7 @@ async def poll(slug: str, now: float | None = None) -> int:
     from features.google.gservices import google
     now = now or time.time()
     session = google.session(slug)
-    if not session or not session.ready(SERVICE):
+    if not session or not (session.ready(SERVICE) or session.ready(ACTIVITY)):
         _state[slug] = {"state": "unlinked", "at": now, "error": ""}
         return 0
     if now - _state.get(slug, {}).get("at", 0.0) < MIN_GAP:
@@ -163,13 +173,15 @@ async def poll(slug: str, now: float | None = None) -> int:
     async with lock:
         end = datetime.fromtimestamp(now, timezone.utc)
         added, error = 0, ""
-        for data_type, key, field, metric, scale, window in SOURCES:
+        for data_type, key, field, metric, scale, window in SOURCES if session.ready(SERVICE) else ():
             params = {"startTime": (end - window).strftime("%Y-%m-%dT%H:%M:%SZ"), "endTime": end.strftime("%Y-%m-%dT%H:%M:%SZ")}
             try:
                 body = await session._get(f"{BASE}/{data_type}/dataPoints", **params)
             except (httpx.HTTPError, ValueError) as exc:
-                error = type(exc).__name__
+                error = _reason(exc)
                 log.info("Google Health %s non letto: %s", data_type, exc)
+                if error in FATAL:
+                    break
                 continue
             added += _keep(slug, points(body, key, field, metric, now, scale), now)
         for data_type, service, window, parse in DAILY:
@@ -179,7 +191,10 @@ async def poll(slug: str, now: float | None = None) -> int:
             try:
                 body = await session._get(f"{BASE}/{data_type}/dataPoints", **params)
             except (httpx.HTTPError, ValueError) as exc:
+                error = error or _reason(exc)
                 log.info("Google Health %s non letto: %s", data_type, exc)
+                if _reason(exc) in FATAL:
+                    break
                 continue
             added += _keep(slug, parse(body, now), now)
         failed = bool(error and not added)

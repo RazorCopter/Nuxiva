@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { ExternalLink, Mail, Unlink } from 'lucide-react';
+import { AlertTriangle, ExternalLink, Mail, Unlink } from 'lucide-react';
 import { GoogleState, googleAuthUrl, googleCancel, googleFinish, googleUnlink } from '../data/connectorsApi';
 import { chipClass, fieldClass, usePeopleI18n } from '../scope';
 import { GoogleReminder } from './GoogleReminder';
 import { GoogleServices } from './GoogleServices';
 import { SetupLink } from './SetupLink';
+import { dropWindow, reserveWindow, sendWindow } from './googleWindow';
 
 interface Props {
   readonly slug: string;
@@ -16,15 +17,19 @@ interface Props {
 export const GoogleCard: React.FC<Props> = ({ slug, state, busy, run }) => {
   const { t } = usePeopleI18n();
   const [pasted, setPasted] = useState('');
+  const [manual, setManual] = useState('');
 
-  const open = async () => {
+  const authorize = async (load: () => Promise<string>, key: string) => {
+    const win = reserveWindow();
     let url = '';
-    const ok = await run('gg-url', async () => {
-      url = await googleAuthUrl(slug);
+    const ok = await run(key, async () => {
+      url = await load();
     }, 'people_connectors_failed');
-    if (ok && url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
+    if (!ok || !url) {
+      dropWindow(win);
+      return;
     }
+    setManual(sendWindow(win, url) ? '' : url);
   };
 
   const finish = async () => {
@@ -45,12 +50,24 @@ export const GoogleCard: React.FC<Props> = ({ slug, state, busy, run }) => {
         </span>
       </header>
       {!state.available && <SetupLink feature="google" hint={t('gg_not_configured')} />}
+      {state.revoked && (
+        <p className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900" role="alert">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          {t('gg_revoked')}
+        </p>
+      )}
+      {manual && (
+        <a href={manual} target="_blank" rel="noopener noreferrer" onClick={() => setManual('')} className={`${chipClass} self-start border-blue-300 bg-blue-600 px-3 py-2 text-white`}>
+          <ExternalLink className="h-4 w-4" aria-hidden="true" />
+          {t('gg_open_google')}
+        </a>
+      )}
       {state.linked && (
         <p className="text-sm text-slate-800">
           {t('gg_linked_as', { email: state.email || '—' })}
         </p>
       )}
-      {state.services.length > 0 && <GoogleServices slug={slug} services={state.services} linked={state.linked} available={state.available} busy={busy} run={run} />}
+      {state.services.length > 0 && <GoogleServices slug={slug} services={state.services} linked={state.linked} available={state.available} busy={busy} run={run} onAuth={authorize} />}
       {state.linked && <GoogleReminder slug={slug} minutes={state.remindMin} busy={busy} run={run} />}
       {state.pending && (
         <div className="flex flex-col gap-2">
@@ -64,7 +81,7 @@ export const GoogleCard: React.FC<Props> = ({ slug, state, busy, run }) => {
         </div>
       )}
       <div className="flex flex-wrap gap-2">
-        <button type="button" disabled={busy !== null || !state.available} onClick={() => void open()} className={`${chipClass} border-blue-300 bg-blue-50 px-3 text-blue-900`}>
+        <button type="button" disabled={busy !== null || !state.available} onClick={() => void authorize(() => googleAuthUrl(slug), 'gg-url')} className={`${chipClass} border-blue-300 bg-blue-50 px-3 text-blue-900`}>
           <ExternalLink className="h-4 w-4" aria-hidden="true" />
           {t(state.linked ? 'gg_relink' : 'gg_link')}
         </button>

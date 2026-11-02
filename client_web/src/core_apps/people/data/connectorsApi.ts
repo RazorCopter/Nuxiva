@@ -26,6 +26,7 @@ export interface GoogleState {
   readonly granted: readonly string[];
   readonly services: readonly GoogleService[];
   readonly remindMin: number;
+  readonly revoked: boolean;
 }
 
 export interface GoogleService {
@@ -76,6 +77,7 @@ function parseGoogle(value: unknown): GoogleState {
     available: raw.available === true,
     linked: raw.linked === true,
     pending: raw.pending === true,
+    revoked: raw.revoked === true,
     email: asString(raw.email, 120) ?? '',
     granted: asStringList(raw.granted, 16),
     remindMin: typeof raw.remind_min === 'number' ? Math.max(0, Math.min(240, Math.round(raw.remind_min))) : 10,

@@ -662,6 +662,18 @@
     "id_back_person": "Back to {name}",
     "id_back_all": "All identities",
     "id_known_since": "known since {when}",
-    "id_auto_hint": "{assistant} adds what it learns about this person to this record on its own: memories, tastes, habits, moods and vital signs stay linked to them over time."
+    "id_auto_hint": "{assistant} adds what it learns about this person to this record on its own: memories, tastes, habits, moods and vital signs stay linked to them over time.",
+    "vitals_reason_api_disabled": "Google Health API not enabled",
+    "vitals_reason_health_profile_missing": "Google Health profile missing",
+    "vitals_reason_scope_missing": "permission not granted",
+    "vitals_reason_unauthorized": "access expired",
+    "vitals_reason_network": "network unreachable",
+    "vitals_reason_quota": "too many requests",
+    "vitals_hint_cloud_api_disabled": "In the Google Cloud project open the API Library and enable “Google Health API”, then try again.",
+    "vitals_hint_cloud_health_profile_missing": "On the phone open the Google Health app with the same Google account and create the profile (or migrate the Fitbit account).",
+    "vitals_hint_cloud_scope_missing": "Relink Google from the Connectors card and keep every Google Health box ticked.",
+    "vitals_hint_cloud_unauthorized": "Relink Google from the Connectors card: when the app is in “Testing” mode access expires every 7 days.",
+    "gg_revoked": "Google revoked or expired the authorisation (it happens every 7 days while the Google app is in “Testing” mode): press “Update permissions” to relink.",
+    "gg_open_google": "Open the Google page"
   }
 }

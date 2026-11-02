@@ -56,7 +56,7 @@ class GoogleData:
     async def unread_threads(self, fallback: int = 0) -> int:
         try:
             label = await self._get("https://gmail.googleapis.com/gmail/v1/users/me/labels/INBOX")
-        except Exception:
+        except (httpx.HTTPError, ValueError):
             return fallback
         count = label.get("threadsUnread")
         return count if isinstance(count, int) and count >= 0 else fallback

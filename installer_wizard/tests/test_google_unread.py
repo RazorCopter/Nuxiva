@@ -10,7 +10,7 @@ class FakeGmail(GoogleData):
     async def _get(self, url, **params):
         if url.endswith("/labels/INBOX"):
             if self.fail:
-                raise RuntimeError("no label access")
+                raise ValueError("no label access")
             return self.label
         if url.endswith("/messages"):
             return {"resultSizeEstimate": self.estimate, "messages": []}

@@ -662,6 +662,18 @@
     "id_back_person": "Volver a {name}",
     "id_back_all": "Todas las identidades",
     "id_known_since": "conocida desde {when}",
-    "id_auto_hint": "{assistant} añade por sí solo a esta ficha lo que aprende sobre esta persona: recuerdos, gustos, hábitos, estados de ánimo y constantes vitales quedan asociados a ella con el tiempo."
+    "id_auto_hint": "{assistant} añade por sí solo a esta ficha lo que aprende sobre esta persona: recuerdos, gustos, hábitos, estados de ánimo y constantes vitales quedan asociados a ella con el tiempo.",
+    "vitals_reason_api_disabled": "API de Google Health no habilitada",
+    "vitals_reason_health_profile_missing": "falta el perfil de Google Health",
+    "vitals_reason_scope_missing": "permiso no concedido",
+    "vitals_reason_unauthorized": "acceso caducado",
+    "vitals_reason_network": "red no disponible",
+    "vitals_reason_quota": "demasiadas solicitudes",
+    "vitals_hint_cloud_api_disabled": "En el proyecto de Google Cloud abre la Biblioteca de API y habilita «Google Health API», luego vuelve a intentarlo.",
+    "vitals_hint_cloud_health_profile_missing": "En el teléfono abre la app Google Health con la misma cuenta de Google y crea el perfil (o migra la cuenta de Fitbit).",
+    "vitals_hint_cloud_scope_missing": "Vuelve a vincular Google desde la tarjeta Conectores y deja marcadas todas las casillas de Google Health.",
+    "vitals_hint_cloud_unauthorized": "Vuelve a vincular Google desde la tarjeta Conectores: si la app está en modo «Prueba» el acceso caduca cada 7 días.",
+    "gg_revoked": "Google revocó o caducó la autorización (ocurre cada 7 días si la app de Google está en modo «Prueba»): pulsa «Actualizar permisos» para volver a vincular.",
+    "gg_open_google": "Abrir la página de Google"
   }
 }

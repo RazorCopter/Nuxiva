@@ -165,5 +165,5 @@ async def answer(text: str) -> tuple[str, dict]:
                 "note_add": cmd_misc.note_add}
     try:
         return await handlers[cmd](text, ctx)
-    except httpx.HTTPStatusError as exc:
-        raise ValueError(f"{SERVICES[service]['name']}: errore {exc.response.status_code}") from exc
+    except httpx.HTTPError as exc:
+        raise ValueError(f"{SERVICES[service]['name']}: Google non raggiungibile ({type(exc).__name__})") from exc

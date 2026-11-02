@@ -192,8 +192,8 @@ class Notifier:
                 kind = "birthday" if r["type"] in ("compleanno", "onomastico") else "event"
                 if not any(r["person"].split()[0].lower() in x["title"].lower() for x in groups[kind]["entries"]):
                     groups[kind]["entries"].append({"time": "", "title": r["title"], "where": ""})
-        except Exception:
-            pass
+        except (OSError, KeyError, ValueError, IndexError) as exc:
+            log.warning("Ricorrenze delle persone non aggiunte al riepilogo: %s", exc)
         return [g for g in groups.values() if g["entries"] or calendar]
 
 

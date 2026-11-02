@@ -167,6 +167,7 @@
     "error_bluetooth_paired_not_connected": "Device paired but not connected yet: turn it on and press Connect.",
     "error_brain_everywhere_failed": "Couldn't apply the model to everything.",
     "error_people_health_failed": "Health data unavailable.",
-    "error_fullscreen_toggle_failed": "Could not switch full screen mode."
+    "error_fullscreen_toggle_failed": "Could not switch full screen mode.",
+    "error_clipboard_failed": "Copy to clipboard failed: select the text and copy it by hand."
   }
 }
