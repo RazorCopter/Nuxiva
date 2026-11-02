@@ -63,7 +63,7 @@
     "owner-name": "Votre prénom",
     "owner-last": "Nom (facultatif)",
     "face-title": "Visage du propriétaire",
-    "face-desc": "Placez-vous devant la caméra du serveur et choisissez une vue. Facultatif : possible aussi plus tard depuis Personnes.",
+    "face-desc": "Placez-vous devant la caméra du serveur et choisissez une vue. Facultatif : possible aussi plus tard depuis le Gestionnaire d'identités.",
     "face-front": "De face",
     "face-three_left": "Trois-quarts gauche",
     "face-three_right": "Trois-quarts droite",

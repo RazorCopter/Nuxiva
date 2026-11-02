@@ -1,9 +1,9 @@
 {
   "id": "people",
-  "name": "People",
+  "name": "Identity Manager",
   "icon": "UserCheck",
   "version": "5.0.0",
-  "description": "Registry of every person: profile, permissions, face, voice, habits, memories, occasions and household habits",
+  "description": "Identity manager: one record per person with profile, health, moods, permissions, face, voice, habits and everything Nuxiva learns about them",
   "scope": "core_apps/people",
   "target": "global",
   "window": {

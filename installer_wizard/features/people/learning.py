@@ -9,7 +9,7 @@ from features.people import people
 from state import store
 
 log = logging.getLogger("nuxiva.people.learning")
-MAX_LEARNED = 200
+MAX_LEARNED = 5000
 MAX_TAGS = 40
 DEDUP_SECONDS = 1800
 FACE_SAMPLES = 8
@@ -123,7 +123,11 @@ def _apply(profile: dict, item: dict) -> bool:
 def _log(profile: dict, item: dict) -> dict:
     row = {"id": uuid.uuid4().hex[:10], "at": time.time(), "field": item["field"], "kind": item["kind"], "value": item["value"],
            "evidence": item["evidence"], "status": "auto"}
-    profile["learned"] = ([row] + list(profile.get("learned") or []))[:MAX_LEARNED]
+    rows = [row] + list(profile.get("learned") or [])
+    while len(rows) > MAX_LEARNED:
+        stale = next((i for i in range(len(rows) - 1, 0, -1) if rows[i].get("status") == "rejected"), len(rows) - 1)
+        rows.pop(stale)
+    profile["learned"] = rows
     return row
 
 

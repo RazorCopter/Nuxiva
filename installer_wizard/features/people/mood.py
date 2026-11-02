@@ -32,6 +32,16 @@ def _clean(mood: str, intensity, note: str, source: str, evidence: str = "", at:
     return entry
 
 
+def archive(profile: dict, overflow: list) -> None:
+    months = profile.setdefault("mood_archive", {})
+    for entry in overflow:
+        if not isinstance(entry, dict) or not entry.get("mood"):
+            continue
+        month = time.strftime("%Y-%m", time.localtime(float(entry.get("at") or 0)))
+        bucket = months.setdefault(month, {})
+        bucket[entry["mood"]] = int(bucket.get(entry["mood"], 0)) + 1
+
+
 def record(slug: str, mood: str, intensity=3, note: str = "", source: str = "manuale", evidence: str = "", at: float | None = None) -> dict:
     entry = _clean(mood, intensity, note, source, evidence, at)
     with people._lock:
@@ -40,6 +50,7 @@ def record(slug: str, mood: str, intensity=3, note: str = "", source: str = "man
             raise KeyError(slug)
         journal = list(profile.get("mood_journal") or [])
         journal.append(entry)
+        archive(profile, journal[:-MAX_ENTRIES])
         profile["mood_journal"] = journal[-MAX_ENTRIES:]
         people.save(profile)
     return entry

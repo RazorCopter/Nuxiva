@@ -14,7 +14,7 @@ from features.mind.records import MemoryInputError, active, content, limbic_stat
 MIND_DIR = STATE_DIR / "mind"
 FACTS_FILE = MIND_DIR / "facts.json"
 MEMORY_KEY = ETC_DIR / "mind.key"
-MAX_FACTS = 400
+MAX_FACTS = 5000
 log = logging.getLogger("nuxiva.mind.memory")
 
 

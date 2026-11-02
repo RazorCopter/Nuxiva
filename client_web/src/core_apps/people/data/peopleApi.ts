@@ -35,6 +35,8 @@ export interface Habits {
 export interface PersonSummary {
   readonly slug: string;
   readonly name: string;
+  readonly firstName: string;
+  readonly lastName: string;
   readonly role: string;
   readonly membership: string;
   readonly nickname: string;
@@ -142,6 +144,8 @@ function parseSummary(value: unknown): PersonSummary | null {
   return {
     slug,
     name: asString(computed.display_name, 120) ?? asString(p.name, 120) ?? slug,
+    firstName: asString(p.first_name, 60) ?? '',
+    lastName: asString(p.last_name, 60) ?? '',
     role: asString(p.role, 20) ?? 'guest',
     membership: asString(p.membership, 12) ?? '',
     nickname: asString(p.nickname, 60) ?? '',

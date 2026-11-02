@@ -9,7 +9,8 @@ from sealed import SealedFile
 from features.people.vitals.model import METRICS
 
 log = logging.getLogger("nuxiva.vitals.history")
-DAYS = 30
+DAYS = 120
+MAX_MONTHS = 600
 SAVE_EVERY = 60.0
 MAX_PEOPLE = 64
 
@@ -60,8 +61,40 @@ class History:
     @staticmethod
     def _trim(person: dict) -> None:
         days = sorted(person["days"])
+        months = person.setdefault("months", {})
         for old in days[:-DAYS]:
-            del person["days"][old]
+            bucket = months.setdefault(old[:7], {})
+            for metric, cell in person["days"].pop(old).items():
+                kept = bucket.get(metric)
+                if kept is None:
+                    bucket[metric] = {"n": cell["n"], "sum": cell["sum"], "min": cell["min"], "max": cell["max"], "days": 1}
+                else:
+                    kept["n"] += cell["n"]
+                    kept["sum"] += cell["sum"]
+                    kept["min"], kept["max"] = min(kept["min"], cell["min"]), max(kept["max"], cell["max"])
+                    kept["days"] = kept.get("days", 1) + 1
+        for old in sorted(months)[:-MAX_MONTHS]:
+            del months[old]
+
+    def months(self, slug: str, metric: str) -> list[dict]:
+        spec = METRICS.get(metric)
+        if not spec:
+            return []
+        with self._lock:
+            months = dict((self._all().get(slug) or {}).get("months") or {})
+        out = []
+        for month in sorted(months):
+            cell = months[month].get(metric)
+            if cell:
+                value = cell["max"] if spec.get("daily") else cell["sum"] / max(1, cell["n"])
+                out.append({"month": month, "value": round(value, spec["digits"]) if spec["digits"] else int(round(value))})
+        return out
+
+    def span(self, slug: str) -> dict:
+        with self._lock:
+            person = self._all().get(slug) or {}
+            keys = sorted(person.get("days") or {}) + [f"{m}-01" for m in person.get("months") or {}]
+        return {"since": min(keys) if keys else None, "days": len(person.get("days") or {}), "months": len(person.get("months") or {})}
 
     def flush(self, now: float | None = None, force: bool = False) -> None:
         now = now or time.time()

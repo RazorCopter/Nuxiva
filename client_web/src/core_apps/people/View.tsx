@@ -1,12 +1,12 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Loader2, UsersRound } from 'lucide-react';
+import { Fingerprint, Loader2 } from 'lucide-react';
 import { PAGE_CLASS } from '../../shared/ui/layout';
 import { useAction, usePolled } from '../../node_apps/shared/hooks/useAction';
 import { createPerson, fetchPeople, fetchPresence, fetchSchema } from './data/peopleApi';
-import { PeopleList } from './components/PeopleList';
-import { PersonView } from './components/PersonView';
 import { RemindersTab } from './components/RemindersTab';
 import { HouseHabits } from './house/HouseHabits';
+import { IdentityGallery } from './identity/IdentityGallery';
+import { PersonPage } from './identity/PersonPage';
 import { panelClass, usePeopleI18n } from './scope';
 
 export const View: React.FC = () => {
@@ -44,7 +44,7 @@ export const View: React.FC = () => {
   }
 
   const people = list.data.people;
-  const person = people.find((p) => p.slug === selected) ?? people.find((p) => !p.scanned) ?? people[0] ?? null;
+  const person = selected ? people.find((p) => p.slug === selected) ?? null : null;
   const known = people.filter((p) => !p.scanned);
   const stats = [
     [t('stat_people'), known.length],
@@ -55,25 +55,27 @@ export const View: React.FC = () => {
 
   return (
     <div className={PAGE_CLASS}>
-      <section className={`${panelClass} flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between`}>
-        <div>
-          <h1 className="flex items-center gap-2 font-['Rajdhani'] text-3xl font-bold tracking-wide text-slate-900">
-            <UsersRound className="h-7 w-7 text-blue-700" aria-hidden="true" />
-            {t('title')}
-          </h1>
-          <p className="mt-1 text-sm text-slate-600">{t('description')}</p>
-          {presence.data && presence.data.status !== 'ok' && <p className="mt-1 text-xs text-amber-800">{t('presence_off')}</p>}
+      <header className="flex flex-col gap-4 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950 p-5 text-white shadow-lg sm:p-6 lg:flex-row lg:items-center">
+        <div className="flex min-w-0 flex-1 items-center gap-4">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20">
+            <Fingerprint className="h-6 w-6 text-sky-300" aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <h1 className="font-['Rajdhani'] text-3xl font-bold tracking-wide">{t('title')}</h1>
+            <p className="mt-0.5 text-sm text-slate-300">{t('description')}</p>
+            {presence.data && presence.data.status !== 'ok' && <p className="mt-1 text-xs text-amber-300">{t('presence_off')}</p>}
+          </div>
         </div>
         <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {stats.map(([label, value]) => (
-            <div key={label} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-              <dt className="text-[10px] uppercase tracking-[0.14em] text-slate-500">{label}</dt>
-              <dd className="font-mono text-xl text-slate-900">{value}</dd>
+            <div key={label} className="flex flex-col-reverse rounded-2xl bg-white/5 px-3 py-2 ring-1 ring-white/10">
+              <dt className="mt-1 truncate text-[10px] uppercase tracking-[0.12em] text-slate-400">{label}</dt>
+              <dd className="font-['Rajdhani'] text-2xl font-bold leading-none">{value}</dd>
             </div>
           ))}
         </dl>
-      </section>
-      <div role="tablist" aria-label={t('title')} className="flex gap-1 self-start rounded-xl border border-slate-200 bg-slate-50 p-1">
+      </header>
+      <div role="tablist" aria-label={t('title')} className="flex gap-1 self-start rounded-2xl bg-slate-100 p-1">
         {(['people', 'reminders', 'house'] as const).map((id) => (
           <button
             key={id}
@@ -81,7 +83,7 @@ export const View: React.FC = () => {
             role="tab"
             aria-selected={tab === id}
             onClick={() => setTab(id)}
-            className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${tab === id ? 'bg-blue-100 text-blue-900' : 'text-slate-600 hover:text-slate-900'}`}
+            className={`rounded-xl px-4 py-1.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${tab === id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
           >
             {t(`main_tab_${id}`)}
           </button>
@@ -100,20 +102,9 @@ export const View: React.FC = () => {
           <HouseHabits />
         </section>
       )}
-      <div className={`grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)] 4xl:grid-cols-[24rem_minmax(0,1fr)] ${tab === 'people' ? '' : 'hidden'}`}>
-        <aside className={panelClass} aria-label={t('people_list')}>
-          <PeopleList
-            people={people}
-            roles={list.data.roles}
-            present={present}
-            selected={person?.slug ?? null}
-            busy={action.busy !== null}
-            onSelect={setSelected}
-            onCreate={(name) => void run('create', () => createPerson(name), 'people_create_failed')}
-          />
-        </aside>
-        {person ? (
-          <PersonView
+      {tab === 'people' &&
+        (person ? (
+          <PersonPage
             key={person.slug}
             summary={person}
             sections={schema.data.sections}
@@ -123,15 +114,22 @@ export const View: React.FC = () => {
             present={present.has(person.slug)}
             busy={action.busy}
             run={run}
+            onBack={() => setSelected(null)}
             onDeleted={() => {
               setSelected(null);
               list.refresh();
             }}
           />
         ) : (
-          <section className={`${panelClass} text-sm text-slate-600`}>{t('empty')}</section>
-        )}
-      </div>
+          <IdentityGallery
+            people={people}
+            roles={list.data.roles}
+            present={present}
+            busy={action.busy !== null}
+            onOpen={setSelected}
+            onCreate={(name) => void run('create', () => createPerson(name), 'people_create_failed')}
+          />
+        ))}
     </div>
   );
 };

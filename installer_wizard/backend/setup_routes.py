@@ -97,7 +97,7 @@ async def setup_face(request: Request, _: None = Depends(require_open)):
     people.ensure(slug, name)
     resp = await views._forward(f"/people/{slug}/views/capture", {"kind": kind, "name": name}, None, 30)
     if resp.status_code in (404, 502, 503):
-        raise HTTPException(503, "Servizio di visione o telecamera del server non disponibile: potrai registrare il volto più tardi da Persone e Presenze")
+        raise HTTPException(503, "Servizio di visione o telecamera del server non disponibile: potrai registrare il volto più tardi dal Gestore Identità")
     if resp.status_code != 200:
         return resp
     done = sorted(set(cfg.get("face_views") or []) | {kind})

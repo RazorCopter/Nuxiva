@@ -89,13 +89,15 @@ class Mind:
         if self.settings.get("long_term") and directed:
             if found:
                 for f in found:
-                    rec = self.memory.add(f["text"], f["kind"], score=max(0.6, scores["memorability"]), who=who)
+                    owner, scope = _owner(f["text"], who)
+                    rec = self.memory.add(f["text"], f["kind"], score=max(0.6, scores["memorability"]), who=owner, scope=scope)
                     if rec:
                         stored.append(rec["text"])
                 memory_route = "lungo"
                 reasons.append("fatto durevole riconosciuto")
             elif scores["memorability"] >= self.settings.get("min_memorability", 0.5) and len(said) >= 20:
-                rec = self.memory.add(said[:160], "fatto", score=scores["memorability"], who=who)
+                owner, scope = _owner(said, who)
+                rec = self.memory.add(said[:160], "fatto", score=scores["memorability"], who=owner, scope=scope)
                 if rec:
                     stored.append(rec["text"])
                     memory_route = "lungo"
@@ -205,3 +207,15 @@ def _overlap(prior: str, said: str) -> float:
 
 
 mind = Mind()
+
+
+def _owner(text: str, speaker: str) -> tuple[str, str | None]:
+    from features.people.mentions import mentions
+    try:
+        mentioned = mentions.owner(text, speaker)
+    except (OSError, ValueError) as exc:
+        log.warning("Persone citate non riconosciute: %s", exc)
+        mentioned = ""
+    if mentioned:
+        return mentioned, "shared"
+    return speaker, None

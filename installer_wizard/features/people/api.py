@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import re
@@ -13,7 +14,8 @@ from config import STATE_DIR
 from core_client import core
 from features.chat import voice_id
 from features.games import saves as games_saves
-from features.people import connectors, faces, insight_api, panel, people, views, voice_training
+from features.people import connectors, faces, insight_api, overview, panel, people, views, voice_training
+from features.people.mentions import mentions
 from features.people.fingerprint import api as fingerprint_api
 from features.people.fingerprint.store import bindings as fingerprint_bindings
 from features.people.wellbeing import api as wellbeing_api
@@ -95,12 +97,21 @@ async def admin_person(slug: str, _: str = Depends(require_admin)):
     return p
 
 
+@admin_routes.get("/api/people/{slug}/overview")
+async def admin_person_overview(slug: str, _: str = Depends(require_admin)):
+    try:
+        return await asyncio.to_thread(overview.build, people.slugify(slug), people.SECTIONS, FACES)
+    except KeyError:
+        raise HTTPException(404, "Persona non trovata") from None
+
+
 @admin_routes.post("/api/people")
 async def admin_person_create(request: Request, user: str = Depends(require_admin)):
     name = str((await request.json()).get("name", "")).strip()
     if not name or len(name) > 40:
         raise HTTPException(400, "Nome non valido")
     p = people.ensure(people.slugify(name), name)
+    mentions.invalidate()
     background(sync_person_neuron(p["slug"]))
     store.event("INFO", f"Profilo creato: {name} (da {user})", "people")
     return p
@@ -117,6 +128,7 @@ async def admin_person_update(slug: str, request: Request, _: str = Depends(requ
         raise HTTPException(404, "Persona non trovata")
     except ValueError as exc:
         raise HTTPException(400, str(exc))
+    mentions.invalidate()
     background(sync_person_neuron(slug))
     return {"ok": True, "updated_at": p["updated_at"]}
 
@@ -176,6 +188,7 @@ async def admin_person_voiceprint_delete(slug: str, user: str = Depends(require_
 @admin_routes.delete("/api/people/{slug}")
 async def admin_person_delete(slug: str, user: str = Depends(require_admin)):
     people.delete(slug)
+    mentions.invalidate()
     vitals_book.forget_person(slug)
     vitals_live.forget(slug)
     vitals_history.forget(slug)
