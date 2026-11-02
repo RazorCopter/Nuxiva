@@ -82,7 +82,7 @@ class TelegramBot:
     def person_status(self, slug: str) -> dict:
         waiting = self.pair_code is not None and time.time() < self.pair_expires and self.pair_person == slug
         return {"available": bool(self.token), "linked": bool(self.chats_of(slug)), "bot": self.me.get("username"),
-                "chats": self.chats_of(slug), "pair_code": self.pair_code if waiting else None,
+                "status": self.status, "chats": self.chats_of(slug), "pair_code": self.pair_code if waiting else None,
                 "pair_expires_in": max(0, int(self.pair_expires - time.time())) if waiting else 0}
 
     def unlink_person(self, slug: str) -> int:

@@ -1,6 +1,6 @@
 import time
 
-from features.people import mood, people
+from features.people import mood, people, sync_view
 from features.people.panel import focus_of, initials, series, visible_people
 from features.people.vitals import cloud, service
 from state import store
@@ -27,15 +27,19 @@ def _focus() -> str:
     return "" if _away() else focus_of("", visible_people())
 
 
+def _kick(slug: str, now: float) -> None:
+    if cloud.ready(slug) and now - _polled.get(slug, 0.0) >= CLOUD_EVERY:
+        _polled[slug] = now
+        background(cloud.poll(slug, now))
+
+
 def health_card() -> dict | None:
     slug = _focus()
     who = _who(slug)
     if not who:
         return None
     now = time.time()
-    if cloud.ready(slug) and now - _polled.get(slug, 0.0) >= CLOUD_EVERY:
-        _polled[slug] = now
-        background(cloud.poll(slug, now))
+    _kick(slug, now)
     view = service.health_view(slug, now)
     if not view:
         return None
@@ -65,3 +69,14 @@ def mood_card() -> dict | None:
     if not entry and not face:
         return None
     return {"person": who, "mood": entry, "face": face, "week": series(slug, now)}
+
+
+def sync_card() -> dict | None:
+    slug = _focus()
+    who = _who(slug)
+    if not who:
+        return None
+    now = time.time()
+    _kick(slug, now)
+    view = sync_view.build(slug, now)
+    return {"person": who, **view} if view else None

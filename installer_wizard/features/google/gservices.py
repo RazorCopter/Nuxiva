@@ -14,6 +14,7 @@ from features.google.notify import notifier
 from features.google.session import Session
 from features.google.timeparse import event_json
 from features.people import identity, people
+from features.people.sync_board import board
 
 MAX_REMIND_MIN = 240
 DEFAULT_REMIND_MIN = 10
@@ -173,24 +174,38 @@ class Google:
 
     async def _refresh(self, profile: dict, minutes: int) -> None:
         session = self.for_profile(profile)
-        if not session or session.info.get("revoked"):
+        slug = profile["slug"]
+        if not session:
             return
-        try:
-            await notifier.brief(profile, session)
-            if session.ready("calendar"):
-                if minutes > 0:
-                    await notifier.soon(profile, session, minutes)
-                await notifier.calendar(profile, session)
-            if session.ready("gmail"):
-                await notifier.mail(profile, session)
-            if session.ready("tasks"):
-                await notifier.tasks(profile, session)
-            if session.ready("keep"):
-                await notifier.notes(profile, session)
-            session.status = "collegato"
-        except (httpx.HTTPError, ValueError, KeyError) as exc:
-            session.status = f"errore: {exc}"[:160]
-            log.warning("Google (%s): %s", profile["slug"], exc)
+        if session.info.get("revoked"):
+            board.fail(slug, "google", "da ricollegare", reason="revoked")
+            return
+        jobs = {"google": lambda: notifier.brief(profile, session),
+                "google_calendar": lambda: self._calendar(profile, session, minutes),
+                "google_gmail": lambda: notifier.mail(profile, session),
+                "google_tasks": lambda: notifier.tasks(profile, session)}
+        failed = ""
+        for key, job in jobs.items():
+            service = key.removeprefix("google_")
+            if key != "google" and not session.ready(service):
+                board.off(slug, key)
+                continue
+            board.start(slug, key)
+            try:
+                await job()
+            except (httpx.HTTPError, ValueError, KeyError) as exc:
+                failed = failed or str(exc)
+                board.fail(slug, key, str(exc) or type(exc).__name__, reason=getattr(exc, "reason", ""))
+                log.warning("Google (%s) %s: %s", slug, key, exc)
+                continue
+            board.ok(slug, key)
+        session.status = f"errore: {failed}"[:160] if failed else "collegato"
+
+    @staticmethod
+    async def _calendar(profile: dict, session: Session, minutes: int) -> None:
+        if minutes > 0:
+            await notifier.soon(profile, session, minutes)
+        await notifier.calendar(profile, session)
 
     async def run(self) -> None:
         seen: set[str] = set()

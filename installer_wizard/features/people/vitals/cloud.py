@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 import httpx
 
+from features.people.sync_board import board
 from features.people.vitals.history import history
 from features.people.vitals.journal import journal
 from features.people.vitals.live import live
@@ -171,6 +172,7 @@ async def poll(slug: str, now: float | None = None) -> int:
     if lock.locked():
         return 0
     async with lock:
+        board.start(slug, "google_health", now)
         end = datetime.fromtimestamp(now, timezone.utc)
         added, error = 0, ""
         for data_type, key, field, metric, scale, window in SOURCES if session.ready(SERVICE) else ():
@@ -200,7 +202,10 @@ async def poll(slug: str, now: float | None = None) -> int:
         failed = bool(error and not added)
         _state[slug] = {"state": "error" if failed else "ok", "at": now, "error": error}
         if failed:
+            board.fail(slug, "google_health", error, reason=error)
             journal.add(slug, "error", "cloud_error", {"reason": error}, now, quiet=600.0)
-        elif added:
-            journal.add(slug, "info", "cloud_ok", {}, now, quiet=1800.0)
+        else:
+            board.ok(slug, "google_health")
+            if added:
+                journal.add(slug, "info", "cloud_ok", {}, now, quiet=1800.0)
     return added
