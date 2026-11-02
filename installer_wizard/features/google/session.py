@@ -54,10 +54,26 @@ class Session(GoogleData):
             self.access_token = body["access_token"]
             self.expires_at = time.time() + int(body.get("expires_in", 3600)) - 60
             changes: dict = {"revoked": False}
-            if body.get("scope"):
-                changes["scopes"] = body["scope"].split()
+            returned = set(str(body.get("scope") or "").split())
+            stored = set(self.info.get("scopes") or [])
+            if returned - stored:
+                changes["scopes"] = sorted(stored | returned)
+            missing = stored - returned
+            if returned and missing:
+                log.info("Google (%s): il rinnovo non elenca %s, li verifico alla prima risposta dell'API", self.slug, ", ".join(sorted(missing)))
             accounts.put(self.slug, changes)
             return self.access_token
+
+    async def verify_scopes(self) -> list[str]:
+        token = await self._access()
+        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+            r = await client.get("https://oauth2.googleapis.com/tokeninfo", params={"access_token": token})
+        if r.status_code != 200:
+            raise explain(r)
+        scopes = sorted(set(str(r.json().get("scope") or "").split()))
+        if scopes:
+            accounts.put(self.slug, {"scopes": scopes})
+        return scopes
 
     async def _call(self, method: str, url: str, **kw) -> dict:
         renewed = False
@@ -76,8 +92,22 @@ class Session(GoogleData):
                 await asyncio.sleep(min(wait, 8.0))
                 continue
             if r.status_code >= 400:
-                raise explain(r)
+                error = explain(r)
+                if error.reason == "scope_missing":
+                    await self._recheck_scopes()
+                raise error
             return r.json() if r.content else {}
+
+    async def _recheck_scopes(self) -> None:
+        try:
+            before = set(accounts.granted(self.info))
+            await self.verify_scopes()
+            lost = before - set(accounts.granted(self.info))
+        except (httpx.HTTPError, ValueError) as exc:
+            log.warning("Google (%s): permessi non verificati: %s", self.slug, exc)
+            return
+        if lost:
+            log.warning("Google (%s): Google non concede più %s", self.slug, ", ".join(sorted(lost)))
 
     async def _get(self, url: str, **params) -> dict:
         return await self._call("GET", url, params=params or None)

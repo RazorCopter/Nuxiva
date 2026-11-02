@@ -83,3 +83,32 @@ class SessionTest(unittest.TestCase):
             return await asyncio.gather(*(s._access() for _ in range(5)))
         self.assertEqual(asyncio.run(many()), ["t"] * 5)
         self.assertEqual(self.tokens.await_count, 1)
+
+
+class ScopeTest(SessionTest):
+    def test_refresh_listing_fewer_scopes_does_not_turn_services_off(self):
+        self.store["anna"]["scopes"] = ["a", "tasks"]
+        self.tokens.return_value = {"access_token": "t", "expires_in": 3600, "scope": "a"}
+        asyncio.run(session_module.Session("anna")._access())
+        self.assertEqual(self.store["anna"]["scopes"], ["a", "tasks"])
+
+    def test_refresh_adds_new_scopes(self):
+        self.store["anna"]["scopes"] = ["a"]
+        self.tokens.return_value = {"access_token": "t", "expires_in": 3600, "scope": "a b"}
+        asyncio.run(session_module.Session("anna")._access())
+        self.assertEqual(self.store["anna"]["scopes"], ["a", "b"])
+
+    def test_insufficient_scope_rechecks_with_google(self):
+        self.store["anna"]["scopes"] = ["a", "tasks"]
+        info = response(200, {"scope": "a"})
+        calls = iter([response(403, {"error": {"details": [{"reason": "ACCESS_TOKEN_SCOPE_INSUFFICIENT"}]}})])
+
+        async def request(self_client, method, url, **kw):
+            return next(calls)
+
+        async def get(self_client, url, **kw):
+            return info
+        with mock.patch.object(httpx.AsyncClient, "request", request), mock.patch.object(httpx.AsyncClient, "get", get):
+            with self.assertRaises(GoogleApiError):
+                asyncio.run(session_module.Session("anna")._get("https://tasks.googleapis.com/x"))
+        self.assertEqual(self.store["anna"]["scopes"], ["a"])
