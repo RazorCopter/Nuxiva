@@ -101,7 +101,7 @@ function Frame({ entry, app }: { entry: OSWindow; app: NonNullable<ReturnType<ty
     if(!allowed||item.permissions?.some(permission=>!access.can(permission)))return;
     if(item.confirmKey)setConfirmation(item);else action(item.id);
   }
-  return <section role="region" tabIndex={-1} aria-label={title} className="os-window" data-mode={mode} style={{ ...geometry, display: entry.minimized ? 'none' : undefined, zIndex: entry.z + (entry.pinned ? 100000 : 0) }} onPointerDown={() => windowStore.focus(entry.id)} onKeyDown={event => {
+  return <section role="region" tabIndex={-1} aria-label={title} className="os-window" style={{ ...geometry, display: entry.minimized ? 'none' : undefined, zIndex: entry.z + (entry.pinned ? 100000 : 0) }} onPointerDown={() => windowStore.focus(entry.id)} onKeyDown={event => {
     if (event.key === 'Escape') { setMenu(false); setInfo(false); }
     const shortcut = app.toolbars?.flatMap(bar => bar.items).find(item => item.shortcut === event.key);
     if (shortcut) { event.preventDefault(); activate(shortcut); }
