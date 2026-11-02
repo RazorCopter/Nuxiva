@@ -97,11 +97,16 @@ def person_mood() -> dict | None:
     return mood_card()
 
 
+def person_checkup() -> dict | None:
+    from features.people.focus import checkup_card
+    return checkup_card()
+
+
 def person_sync() -> dict | None:
     from features.people.focus import sync_card
     return sync_card()
 
 
-SOURCES = {"person_health": person_health, "person_mood": person_mood, "person_sync": person_sync, "sun_cycle": sun_cycle, "home_rooms": home_rooms, "update_ready": update_ready, "components_down": components_down}
+SOURCES = {"person_health": person_health, "person_mood": person_mood, "person_sync": person_sync, "person_checkup": person_checkup, "sun_cycle": sun_cycle, "home_rooms": home_rooms, "update_ready": update_ready, "components_down": components_down}
 PROVIDERS = {"system_monitor": system_monitor, "system_health": system_health, "network_devices": network_devices,
              "sun_cycle": sun_cycle, "weather": weather}

@@ -39,6 +39,7 @@ class CameraVitals:
         self._bands: dict[str, tuple[bool, float]] = {}
         self._sent: dict[tuple[str, str], float] = {}
         self._seen: dict[str, dict] = {}
+        self._forced: dict[str, float] = {}
         self._cost = {"cpu_ms": 0.0, "frames": 0}
         self._lock = threading.Lock()
 
@@ -57,6 +58,24 @@ class CameraVitals:
     def forget(self, slug: str) -> None:
         self._bands.pop(slug, None)
 
+    def force(self, slug: str, seconds: float, now: float | None = None) -> None:
+        now = now or time.time()
+        with self._lock:
+            self._forced = {k: v for k, v in self._forced.items() if v > now}
+            if seconds > 0:
+                self._forced[slug] = now + min(seconds, 300.0)
+            else:
+                self._forced.pop(slug, None)
+
+    def forced(self, slug: str, now: float | None = None) -> bool:
+        return self._forced.get(slug, 0.0) > (now or time.time())
+
+    def reading(self, slug: str, now: float | None = None) -> dict | None:
+        now = now or time.time()
+        with self._lock:
+            seen = self._seen.get(slug)
+        return dict(seen) if seen and now - seen["at"] <= READING_FRESH else None
+
     def targets(self, visible: list, now: float | None = None) -> list[str]:
         now = now or time.time()
         if not enabled() or server_busy():
@@ -64,7 +83,7 @@ class CameraVitals:
         slugs = []
         for person in visible:
             slug = person.get("slug")
-            if person.get("known") and isinstance(slug, str) and slug not in slugs and not self.has_band(slug, now):
+            if person.get("known") and isinstance(slug, str) and slug not in slugs and (self.forced(slug, now) or not self.has_band(slug, now)):
                 slugs.append(slug)
         return slugs[:MAX_TARGETS]
 
@@ -94,7 +113,9 @@ class CameraVitals:
             progress = reading.get("progress")
             with self._lock:
                 self._seen[slug] = {"at": now, "progress": float(progress) if isinstance(progress, (int, float)) else 0.0,
-                                    "quality": {m: reading.get(q) for m, q in QUALITY.items() if isinstance(reading.get(q), (int, float))}}
+                                    "quality": {m: reading.get(q) for m, q in QUALITY.items() if isinstance(reading.get(q), (int, float))},
+                                    "values": {m: reading.get(m) for m, (lo, hi) in LIMITS.items()
+                                               if isinstance(reading.get(m), int) and not isinstance(reading.get(m), bool) and lo <= reading[m] <= hi}}
             samples = self._samples(slug, reading, now)
             if samples:
                 accepted += service.ingest(slug, samples, SOURCE, KIND, now)["accepted"]
@@ -127,7 +148,7 @@ class CameraVitals:
         streaming = any(v.get("kind") == KIND and v.get("age", SEEN_TTL * 10) <= 120 for v in values.values())
         if not enabled():
             state = "off"
-        elif self.has_band(slug, now):
+        elif self.has_band(slug, now) and not self.forced(slug, now):
             state = "band"
         elif server_busy():
             state = "busy"

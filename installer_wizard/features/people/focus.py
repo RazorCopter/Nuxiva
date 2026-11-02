@@ -3,6 +3,7 @@ import time
 from features.people import mood, people, sync_view
 from features.people.panel import focus_of, initials, series, visible_people
 from features.people.vitals import cloud, service
+from features.people.vitals.checkup import checkup
 from state import store
 from tasks import background
 
@@ -79,4 +80,14 @@ def sync_card() -> dict | None:
     now = time.time()
     _kick(slug, now)
     view = sync_view.build(slug, now)
+    return {"person": who, **view} if view else None
+
+
+def checkup_card() -> dict | None:
+    slug = _focus()
+    who = _who(slug)
+    if not who:
+        return None
+    near = any(p.get("slug") == slug and p.get("near") for p in visible_people())
+    view = checkup.tick(slug, near, time.time())
     return {"person": who, **view} if view else None
