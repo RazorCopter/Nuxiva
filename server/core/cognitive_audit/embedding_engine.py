@@ -122,17 +122,23 @@ class UnifiedEmbeddingEngine:
         try:
             from server.core.hippocampus_router.onnx_embedding_engine import FastEmbedEngine
             self._local_engine = FastEmbedEngine(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
-            # Verifica che si carichi correttamente chiamando ensure_dimension() come metodo
+            # Verifica che si carichi correttamente chiamando ensure_dimension()
             dim_result = self._local_engine.ensure_dimension()
-            if hasattr(dim_result, 'is_ok') and dim_result.is_ok():
-                logger.info("Local FastEmbed engine initialized (dimension: %d)", dim_result.unwrap())
-                return True
+            
+            # Gestione Result object (con metodi is_ok/unwrap)
+            if hasattr(dim_result, 'is_ok'):
+                if dim_result.is_ok:  # Proprietà, non metodo!
+                    logger.info("Local FastEmbed engine initialized (dimension: %d)", dim_result.unwrap())
+                    return True
+                else:
+                    logger.warning("FastEmbed dimension check failed: %s", dim_result.error if hasattr(dim_result, 'error') else 'unknown')
+                    return False
+            # Gestione int diretto
             elif isinstance(dim_result, int) and dim_result > 0:
-                # Fallback se ensure_dimension() ritorna direttamente int
                 logger.info("Local FastEmbed engine initialized (dimension: %d)", dim_result)
                 return True
             else:
-                logger.warning("FastEmbed dimension check failed: %s", dim_result)
+                logger.warning("FastEmbed dimension check returned unexpected type: %s", type(dim_result))
                 return False
         except Exception as e:
             logger.warning("Failed to initialize local embedding engine: %s", e, exc_info=True)
