@@ -59,7 +59,8 @@ def services_to_reload(keys) -> list[str]:
 
 
 async def reload_services(keys) -> None:
-    if os.environ.get('NUXIVA_TEST_AUTH') == '1':
+    import machine
+    if os.environ.get('NUXIVA_TEST_AUTH') == '1' or machine.is_container():
         return
     for unit in services_to_reload(keys):
         code, _ = await health.sh("systemctl", "is-active", "--quiet", f"{unit}.service", timeout=10)
@@ -92,11 +93,12 @@ async def apply_config(updates: dict, user: str, extra_steps: list | None = None
             needs += steps
     needs = [n for n in dict.fromkeys(needs) if n in STEP_BY_ID]
     if needs and os.environ.get('NUXIVA_TEST_AUTH') != '1':
-        if "services" in needs:
-            import machine
-            if machine.core_runtime() == "native":
-                await health.sh("systemctl", "stop", "nuxiva-core", timeout=60)
-            else:
-                await health.sh("docker", "rm", "-f", "nuxiva-core", "atena-core", timeout=60)
-        background(converge_steps(needs, "Applicazione della nuova configurazione"))
+        import machine
+        if not machine.is_container():
+            if "services" in needs:
+                if machine.core_runtime() == "native":
+                    await health.sh("systemctl", "stop", "nuxiva-core", timeout=60)
+                else:
+                    await health.sh("docker", "rm", "-f", "nuxiva-core", "atena-core", timeout=60)
+            background(converge_steps(needs, "Applicazione della nuova configurazione"))
     return needs

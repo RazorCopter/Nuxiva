@@ -35,7 +35,10 @@ def _uptime(started_us: int) -> float | None:
 
 
 async def last_error(sh: Shell) -> str:
-    code, out = await sh("journalctl", "-u", UNIT, "-n", "80", "--no-pager", "-o", "cat", timeout=5)
+    try:
+        code, out = await sh("journalctl", "-u", UNIT, "-n", "80", "--no-pager", "-o", "cat", timeout=5)
+    except Exception:
+        return ""
     if code != 0:
         return ""
     for line in reversed(out.splitlines()):
@@ -45,7 +48,10 @@ async def last_error(sh: Shell) -> str:
 
 
 async def diagnose(sh: Shell) -> dict:
-    code, out = await sh("systemctl", "show", UNIT, "--property=" + ",".join(PROPERTIES), timeout=5)
+    try:
+        code, out = await sh("systemctl", "show", UNIT, "--property=" + ",".join(PROPERTIES), timeout=5)
+    except Exception:
+        return {"status": "down", "detail": "Servizio di ascolto non installato"}
     if code != 0:
         return {"status": "down", "detail": "Servizio di ascolto non installato"}
     state = _parse(out)
@@ -68,8 +74,11 @@ async def diagnose(sh: Shell) -> dict:
 
 
 async def recover(sh: Shell, converge: Callable[[], Awaitable[object]], comp: dict, count: int) -> None:
-    if comp.get("crashloop") or count > 2:
-        await sh("systemctl", "reset-failed", UNIT, timeout=15)
-        await converge()
-        return
-    await sh("systemctl", "restart", UNIT, timeout=60)
+    try:
+        if comp.get("crashloop") or count > 2:
+            await sh("systemctl", "reset-failed", UNIT, timeout=15)
+            await converge()
+            return
+        await sh("systemctl", "restart", UNIT, timeout=60)
+    except Exception:
+        pass

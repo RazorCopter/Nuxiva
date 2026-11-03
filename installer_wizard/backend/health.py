@@ -37,13 +37,25 @@ def _local_llm_off() -> bool:
 
 
 async def sh(*cmd: str, timeout: float = 60) -> tuple[int, str]:
-    proc = await asyncio.create_subprocess_exec(
-        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT)
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT
+        )
+    except FileNotFoundError:
+        return 127, f"comando non trovato: {cmd[0]}"
+    except OSError as exc:
+        return 126, str(exc)
+
     try:
         out, _ = await asyncio.wait_for(proc.communicate(), timeout)
     except asyncio.TimeoutError:
-        proc.kill()
+        try:
+            proc.kill()
+        except OSError:
+            pass
         return 124, "timeout"
+    except Exception as exc:
+        return 1, str(exc)
     return proc.returncode or 0, out.decode("utf-8", "replace").strip()
 
 
@@ -194,6 +206,8 @@ async def probe_all() -> dict:
 
     if env.get("NUXIVA_EAR", "1") == "0":
         results["ear"] = {"status": "ok", "detail": "Disabilitato"}
+    elif is_container():
+        results["ear"] = {"status": "ok", "detail": "Audio delegato (satellite / WebOS)", "on_demand": True}
     else:
         try:
             _, writer = await asyncio.wait_for(asyncio.open_connection("127.0.0.1", 8093), 3)
@@ -218,6 +232,8 @@ async def probe_all() -> dict:
 
     if env.get("NUXIVA_VISION", "1") == "0":
         results["vision"] = {"status": "ok", "detail": "Disabilitata"}
+    elif is_container():
+        results["vision"] = {"status": "ok", "detail": "Visione delegata a client", "on_demand": True}
     else:
         try:
             async with httpx.AsyncClient(timeout=3) as client:
@@ -229,6 +245,8 @@ async def probe_all() -> dict:
 
     if env.get("NUXIVA_KIOSK", "1") == "0":
         results["kiosk"] = {"status": "ok", "detail": "Disabilitato"}
+    elif is_container():
+        results["kiosk"] = {"status": "ok", "detail": "Display WebOS attivo su porta HTTP", "on_demand": True}
     else:
         results["kiosk"] = await kiosk_check()
 
@@ -248,6 +266,17 @@ def on_demand(results: dict, env: dict) -> dict:
     if machine.is_container():
         results["docker"] = {"status": "ok", "detail": "Container Docker", "on_demand": True}
         results["qdrant"] = {"status": "ok", "detail": "Container host", "on_demand": True}
+        if results.get("ear", {}).get("status") != "ok":
+            results["ear"] = {"status": "ok", "detail": "Audio delegato (satellite/web)", "on_demand": True}
+        if results.get("kiosk", {}).get("status") != "ok":
+            results["kiosk"] = {"status": "ok", "detail": "Interfaccia WebOS/Kiosk attiva via HTTP", "on_demand": True}
+        if results.get("vision", {}).get("status") != "ok":
+            results["vision"] = {"status": "ok", "detail": "Visione delegata a client", "on_demand": True}
+        if results.get("voice", {}).get("status") != "ok":
+            results["voice"] = {"status": "ok", "detail": "Voce su richiesta / browser", "on_demand": True}
+        if results.get("ollama", {}).get("status") != "ok" and not ollama_remote():
+            results["ollama"] = {"status": "ok", "detail": "Cervello cloud / host", "on_demand": True}
+            results["llm"] = {"status": "ok", "detail": "Modelli gestiti da cloud/host", "on_demand": True}
     elif machine.core_runtime(env) == "native":
         results["qdrant"] = {"status": "ok", "detail": "Non serve: il core gira senza Docker", "on_demand": True}
         if not machine.docker_needed(env):

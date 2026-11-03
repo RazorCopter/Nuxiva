@@ -223,6 +223,8 @@ async def admin_action(action: str, request: Request, user: str = Depends(requir
         comp = body.get("component")
         if comp not in COMPONENT_RESTART:
             raise HTTPException(404, "Componente sconosciuto")
+        if machine.is_container():
+            return {"ok": True, "output": f"Componente {comp} gestito dal container"}
         if comp == "kiosk":
             await health.sh("pkill", "-t", "tty1")
         command = ["systemctl", "restart", "nuxiva-core"] if comp == "core" and machine.core_runtime() == "native" else COMPONENT_RESTART[comp]
@@ -242,10 +244,16 @@ async def admin_action(action: str, request: Request, user: str = Depends(requir
         updater.clear_bad_rev()
         return await updater.check(allow_bad=True)
     elif action == "reboot":
+        if machine.is_container():
+            return {"ok": False, "message": "Riavvio non consentito nel container"}
         background(delayed("systemctl", "reboot"))
     elif action in ("poweroff", "shutdown"):
+        if machine.is_container():
+            return {"ok": False, "message": "Spegnimento non consentito nel container"}
         background(delayed("systemctl", "poweroff"))
     elif action == "restart-supervisor":
+        if machine.is_container():
+            return {"ok": False, "message": "Riavvio del supervisore gestito dall'orchestratore container"}
         background(delayed("systemctl", "restart", "nuxiva-supervisor"))
     else:
         raise HTTPException(404, "Azione sconosciuta")

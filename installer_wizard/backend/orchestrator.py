@@ -93,7 +93,10 @@ class Orchestrator:
         else:
             await updater.mark_good()
         store.save()
-        health.publish(await health.probe_all())
+        try:
+            health.publish(await health.probe_all())
+        except Exception as exc:
+            log.exception("Errore durante il probe dello stato di salute iniziale: %s", exc)
         store.progress = 100
         store.set_phase("READY", "Tutti i sistemi operativi")
         self.installer = asyncio.create_task(self.install_background())
