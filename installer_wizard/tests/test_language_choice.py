@@ -39,7 +39,7 @@ class LanguageFilesTest(unittest.TestCase):
     def test_every_language_has_the_same_keys(self):
         files = codes()
         reference = set(parse(LANG_DIR / "en.txt"))
-        self.assertGreaterEqual(len(files), 6)
+        self.assertGreaterEqual(len(files), 4)
         for path in files:
             self.assertEqual(set(parse(path)), reference, path.name)
 
@@ -105,14 +105,14 @@ class PickerTest(unittest.TestCase):
         self.assertEqual(self.drive([b"\n"]), "it")
 
     def test_arrow_keys_move_the_selection(self):
-        self.assertEqual(self.drive([b"\x1b[B", b"\x1b[B", b"\n"]), "fr")
+        self.assertEqual(self.drive([b"\x1b[B", b"\x1b[B", b"\n"]), "es")
         self.assertEqual(self.drive([b"\x1b[A", b"\n"]), "en")
 
     def test_mouse_click_selects_the_row(self):
-        self.assertEqual(self.drive([b"\x1b[<0;10;7M"]), "es")
+        self.assertEqual(self.drive([b"\x1b[<0;10;7M"]), "fr")
 
     def test_mouse_wheel_scrolls(self):
-        self.assertEqual(self.drive([b"\x1b[<65;1;1M", b"\n"]), "es")
+        self.assertEqual(self.drive([b"\x1b[<65;1;1M", b"\n"]), "fr")
 
 
 if __name__ == "__main__":

@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
 
 LP_CHOICES=(
-    "en|English" "it|Italiano" "es|Español" "fr|Français" "de|Deutsch" "pt|Português"
-    "nl|Nederlands" "pl|Polski" "ro|Română" "ru|Russian" "uk|Ukrainian" "el|Greek"
-    "tr|Türkçe" "ar|Arabic" "he|Hebrew" "fa|Persian" "zh|Chinese" "ja|Japanese"
-    "ko|Korean" "hi|Hindi" "sv|Svenska" "da|Dansk" "nb|Norsk" "fi|Suomi"
-    "cs|Čeština" "hu|Magyar" "sq|Shqip" "hr|Hrvatski" "bg|Bulgarian" "vi|Tiếng Việt"
-    "th|Thai" "id|Bahasa Indonesia" "ms|Bahasa Melayu"
+    "en|English" "it|Italiano" "fr|Français" "es|Español"
 )
 LP_IDLE_LIMIT=${LP_IDLE_LIMIT:-120}
 LP_STEP=${LP_STEP:-14}
@@ -62,7 +57,6 @@ lp_draw() {
         fi
     done
     printf '\n  \033[2m↑ ↓  Enter  ·  mouse: move + click  ·  %s/%s\033[0m\n' "$(( LP_SEL + 1 ))" "$LP_N" >/dev/tty
-    printf '  \033[2mUI text without a translation continues in English; the whole system setup uses your language.\033[0m\n' >/dev/tty
 }
 
 lp_move() {
