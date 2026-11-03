@@ -78,6 +78,69 @@ class LLMGateway:
             chain.append("ollama")
         return chain
 
+    async def list_available_models(self) -> list[str]:
+        """
+        Recupera la lista dei modelli disponibili dal provider configurato.
+        Supporta sia Ollama (/api/tags) che OpenAI-compatible (/v1/models).
+        """
+        try:
+            # Se LLM_PROVIDER è openai e OPENAI_BASE_URL è configurato, usa /v1/models
+            if settings.LLM_PROVIDER.lower() == "openai" and settings.OPENAI_BASE_URL:
+                if not self._openai_api_key:
+                    logger.error("OPENAI_API_KEY non configurata! Impossibile recuperare modelli da %s", settings.OPENAI_BASE_URL)
+                    return []
+                return await self._list_openai_models()
+            # Altrimenti usa Ollama /api/tags (default)
+            return await self._list_ollama_models()
+        except Exception as e:
+            logger.error("Failed to list models: %s", e, exc_info=True)
+            return []
+
+    async def _list_openai_models(self) -> list[str]:
+        """Lista modelli da endpoint OpenAI-compatible (es. OmniRoute /v1/models)"""
+        base_url = settings.OPENAI_BASE_URL
+        endpoint = f"{base_url}/models"
+        headers = {}
+        if self._openai_api_key:
+            headers["Authorization"] = f"Bearer {self._openai_api_key}"
+        
+        logger.info("Fetching models from OpenAI-compatible endpoint: %s", endpoint)
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                res = await client.get(endpoint, headers=headers)
+                if res.status_code == 401:
+                    logger.error("401 Unauthorized su %s - Verifica OPENAI_API_KEY", endpoint)
+                    return []
+                if res.status_code == 403:
+                    logger.error("403 Forbidden su %s - La chiave API potrebbe essere di tipo MANAGEMENT invece che INFERENCE", endpoint)
+                    return []
+                res.raise_for_status()
+                data = res.json()
+                # Formato OpenAI: {"object": "list", "data": [{"id": "model-name"}, ...]}
+                models = [m.get("id", "") for m in data.get("data", []) if m.get("id")]
+                logger.info("✅ Found %d models from OpenAI-compatible endpoint", len(models))
+                return models
+        except httpx.TimeoutException:
+            logger.error("Timeout connessione a %s - Verifica che l'endpoint sia raggiungibile", endpoint)
+            return []
+        except httpx.ConnectError:
+            logger.error("Impossibile connettersi a %s - Verifica URL e rete", endpoint)
+            return []
+
+    async def _list_ollama_models(self) -> list[str]:
+        """Lista modelli da Ollama /api/tags"""
+        ollama_url = self.get_ollama_url()
+        endpoint = f"{ollama_url}/api/tags"
+        logger.info("Fetching models from Ollama endpoint: %s", endpoint)
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            res = await client.get(endpoint)
+            res.raise_for_status()
+            data = res.json()
+            # Formato Ollama: {"models": [{"name": "model-name"}, ...]}
+            models = [m.get("name", "") for m in data.get("models", []) if m.get("name")]
+            logger.info("Found %d models from Ollama", len(models))
+            return models
+
     def stream_completion(self, request: LLMRequest) -> AsyncIterator[str]:
         from server.features.llm_gateway.streaming import stream
         return stream(self, request)
@@ -213,8 +276,12 @@ class LLMGateway:
             messages.append({"role": "system", "content": request.system_prompt})
         for m in request.messages:
             messages.append({"role": m.role, "content": m.content})
+        
+        # Usa DEFAULT_LLM_MODEL se configurato, altrimenti il modello OpenAI di default
+        model = settings.DEFAULT_LLM_MODEL or settings.NUXIVA_OPENAI_MODEL
+        
         payload = {
-            "model": settings.NUXIVA_OPENAI_MODEL,
+            "model": model,
             "messages": messages,
             "max_tokens": request.max_tokens,
             "temperature": request.temperature,
@@ -223,8 +290,15 @@ class LLMGateway:
             "Authorization": f"Bearer {self._openai_api_key}",
             "Content-Type": "application/json",
         }
+        
+        # Usa OPENAI_BASE_URL se configurato (es. OmniRoute), altrimenti OpenAI ufficiale
+        base_url = settings.OPENAI_BASE_URL or "https://api.openai.com/v1"
+        endpoint = f"{base_url}/chat/completions"
+        
+        logger.info("Routing OpenAI-compatible request to: %s (model: %s)", endpoint, model)
+        
         async with httpx.AsyncClient(timeout=60.0) as client:
-            res = await client.post("https://api.openai.com/v1/chat/completions", json=payload, headers=headers)
+            res = await client.post(endpoint, json=payload, headers=headers)
             res.raise_for_status()
             data = res.json()
             content = data["choices"][0]["message"]["content"]
@@ -232,7 +306,7 @@ class LLMGateway:
             elapsed = (time.time() - start_time) * 1000
             return LLMResponse(
                 content=content,
-                model_used=settings.NUXIVA_OPENAI_MODEL,
+                model_used=data.get("model") or model,
                 tokens_consumed=tokens,
                 duration_ms=elapsed,
             )

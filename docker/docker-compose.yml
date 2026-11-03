@@ -17,11 +17,24 @@ services:
     environment:
       NUXIVA_ENV: production
       NUXIVA_HOST: 0.0.0.0
-      NUXIVA_PORT: "8449"
-      # Endpoint OmniRoute (compatibilità Ollama e OpenAI)
-      OLLAMA_BASE_URL: http://10.0.0.105:20128
-      OPENAI_BASE_URL: http://10.0.0.105:20128/v1
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-sk-omniroute}
+      NUXIVA_PORT: ${NUXIVA_PORT:-8449}
+      
+      # LLM Provider Configuration
+      # Usa "openai" per endpoint OpenAI-compatible (es. OmniRoute)
+      # Usa "ollama" per istanza Ollama locale nativa
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+      
+      # OpenAI-Compatible Endpoint (es. OmniRoute, LiteLLM, vLLM)
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-http://10.0.0.105:20128/v1}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      
+      # Modello di default per gli agenti (es. "Combinazione-Auto", "zoo-orchestrator")
+      DEFAULT_LLM_MODEL: ${DEFAULT_LLM_MODEL:-}
+      
+      # Ollama Endpoint (fallback se LLM_PROVIDER=ollama)
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://127.0.0.1:11434}
+      
+      # Qdrant Vector DB
       QDRANT_HOST: 127.0.0.1
     volumes:
       - /etc/localtime:/etc/localtime:ro

@@ -14,7 +14,9 @@ class ServerSettings(BaseSettings):
     )
     DATA_DIR: str = "./data"
     OLLAMA_BASE_URL: str = "http://127.0.0.1:11434"
-    LLM_PROVIDER: str = "ollama"
+    OPENAI_BASE_URL: str = ""  # OpenAI-compatible endpoint (es. OmniRoute /v1)
+    LLM_PROVIDER: str = "ollama"  # "ollama" o "openai"
+    DEFAULT_LLM_MODEL: str = ""  # Modello di default per gli agenti
     SYSTEM1_MODEL: str = "qwen2.5:0.5b"
     BABBLING_MODEL: str = "llama3.2"
     SYSTEM2_MODEL: str = "qwen2.5:7b"
