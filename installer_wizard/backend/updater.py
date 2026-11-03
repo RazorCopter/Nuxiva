@@ -9,6 +9,7 @@ from config import NUXIVA_DIR, STATE_DIR, env_get
 
 DEMO: bool = False
 from health import sh
+from machine import is_container
 from state import now_iso, store
 
 PENDING_FILE = STATE_DIR / "update_pending.json"
@@ -239,6 +240,8 @@ async def mark_good() -> None:
 
 
 def auto_update_enabled() -> bool:
+    if is_container():
+        return False
     return env_get("NUXIVA_AUTO_UPDATE", "1") != "0"
 
 
@@ -312,7 +315,8 @@ async def apply(reason: str = "automatico", fetch_timeout: float = 180, force: b
     store.message = "Riavvio del supervisore sulla nuova versione…"
     store.touch()
     await asyncio.sleep(2)
-    await sh("systemctl", "restart", "--no-block", "nuxiva-supervisor.service", timeout=10)
+    if not is_container():
+        await sh("systemctl", "restart", "--no-block", "nuxiva-supervisor.service", timeout=10)
     return True
 
 
@@ -379,7 +383,8 @@ async def finish_pending(success: bool) -> bool:
     except Exception:
         pass
     await git("reset", "--hard", data["from"])
-    await sh("systemctl", "restart", "--no-block", "nuxiva-supervisor.service", timeout=10)
+    if not is_container():
+        await sh("systemctl", "restart", "--no-block", "nuxiva-supervisor.service", timeout=10)
     return True
 
 

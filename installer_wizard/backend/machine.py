@@ -1,7 +1,10 @@
 import os
 from pathlib import Path
 
-import psutil
+try:
+    import psutil
+except ImportError:
+    psutil = None
 
 from config import read_env
 
@@ -25,7 +28,9 @@ def board() -> str:
 
 
 def ram_gb() -> float:
-    return psutil.virtual_memory().total / 2 ** 30
+    if psutil is not None:
+        return psutil.virtual_memory().total / 2 ** 30
+    return 8.0
 
 
 def detect(gpu: bool = False) -> str:
@@ -60,3 +65,17 @@ def core_runtime(env: dict | None = None) -> str:
 def docker_needed(env: dict | None = None) -> bool:
     env = read_env() if env is None else env
     return core_runtime(env) == "docker" or env.get("NUXIVA_SANDBOX", "").strip().lower() in ("1", "on", "yes", "true", "auto")
+
+
+def is_container() -> bool:
+    if os.environ.get("NUXIVA_CONTAINER", "").strip().lower() in ("1", "true", "yes", "on"):
+        return True
+    if Path("/.dockerenv").exists():
+        return True
+    try:
+        cgroup = Path("/proc/1/cgroup")
+        if cgroup.exists() and any(x in cgroup.read_text(encoding="utf-8", errors="ignore") for x in ("docker", "containerd", "kubepods")):
+            return True
+    except OSError:
+        pass
+    return False

@@ -8,6 +8,7 @@ import httpx
 import ear_probe
 
 from config import CORE_URL, STATE_DIR, kiosk_log, ollama_remote, ollama_url, read_env
+from machine import is_container
 from state import store
 
 log = logging.getLogger("nuxiva.health")
@@ -129,8 +130,11 @@ async def probe_all() -> dict:
     env = read_env()
     results: dict = {}
     async with httpx.AsyncClient(timeout=4) as client:
-        code, out = await sh("docker", "info", "--format", "{{.ServerVersion}}", timeout=15)
-        results["docker"] = {"status": "ok" if code == 0 else "down", "detail": f"v{out}" if code == 0 else out[:120]}
+        if is_container():
+            results["docker"] = {"status": "ok", "detail": "Container Docker", "on_demand": True}
+        else:
+            code, out = await sh("docker", "info", "--format", "{{.ServerVersion}}", timeout=15)
+            results["docker"] = {"status": "ok" if code == 0 else "down", "detail": f"v{out}" if code == 0 else out[:120]}
 
         local_disabled = os.getenv("NUXIVA_LOCAL_OLLAMA_DISABLED") == "1"
         try:
@@ -241,7 +245,10 @@ async def probe_all() -> dict:
 def on_demand(results: dict, env: dict) -> dict:
     import machine
     import packages
-    if machine.core_runtime(env) == "native":
+    if machine.is_container():
+        results["docker"] = {"status": "ok", "detail": "Container Docker", "on_demand": True}
+        results["qdrant"] = {"status": "ok", "detail": "Container host", "on_demand": True}
+    elif machine.core_runtime(env) == "native":
         results["qdrant"] = {"status": "ok", "detail": "Non serve: il core gira senza Docker", "on_demand": True}
         if not machine.docker_needed(env):
             results["docker"] = {"status": "ok", "detail": "Non serve: il core gira senza Docker", "on_demand": True}
@@ -289,6 +296,8 @@ class Watchdog:
         self.gave_up: set = set()
 
     async def _heal_mic(self, count: int) -> None:
+        if is_container():
+            return
         if count <= 2:
             store.mic_reset = time.time()
             store.touch()
@@ -296,6 +305,8 @@ class Watchdog:
             await sh("systemctl", "restart", "getty@tty1", timeout=30)
 
     async def _heal(self, key: str) -> None:
+        if is_container():
+            return
         now = time.time()
         if now < self.next_try.get(key, 0) or key in self.gave_up:
             return

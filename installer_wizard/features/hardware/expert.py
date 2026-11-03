@@ -22,6 +22,14 @@ from features.hardware.model import HardwareDevice
 from features.hardware.repos import RepoManager
 from state import store
 from features.hardware.localization import translate
+try:
+    from machine import is_container
+except ImportError:
+    try:
+        from installer_wizard.backend.machine import is_container
+    except ImportError:
+        def is_container() -> bool:
+            return os.environ.get("NUXIVA_CONTAINER", "").strip().lower() in ("1", "true", "yes", "on") or Path("/.dockerenv").exists()
 log = logging.getLogger('nuxiva.hardware.expert')
 BOUND_REQUIRED = {'wifi', 'bluetooth', 'network', 'gpu', 'audio', 'camera', 'serial', 'accelerator', 'platform', 'printer', 'storage', 'input'}
 BLACKLIST_DIR = Path(os.environ.get('NUXIVA_MODPROBE_DIR', '/run/modprobe.d'))
@@ -202,6 +210,10 @@ class HardwareAgent(PackageOperations):
             log.error('Notifica bus non pubblicata: %s', exc)
 
     async def provision(self, device: HardwareDevice, approve: bool=False, refresh: bool=False) -> bool:
+        if is_container():
+            log.info("Ambiente container: provisioning hardware per %s disabilitato", device.name)
+            device.add_step("ambiente", "container", False, "Installazione driver delegata all'host")
+            return False
         async with self._lock:
             a = self._assess(device)
             device.required_packages = a.packages

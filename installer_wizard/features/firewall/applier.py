@@ -17,8 +17,18 @@ class FirewallError(RuntimeError):
     pass
 
 
+try:
+    from machine import is_container
+except ImportError:
+    try:
+        from installer_wizard.backend.machine import is_container
+    except ImportError:
+        def is_container() -> bool:
+            return os.environ.get("NUXIVA_CONTAINER", "").strip().lower() in ("1", "true", "yes", "on") or os.path.exists("/.dockerenv")
+
+
 def available() -> bool:
-    return sys.platform.startswith("linux") and shutil.which("nft") is not None
+    return not is_container() and sys.platform.startswith("linux") and shutil.which("nft") is not None
 
 
 def render() -> str:

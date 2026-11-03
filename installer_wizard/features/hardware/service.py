@@ -16,6 +16,14 @@ from features.hardware.firmware import missing_for_device
 from features.hardware.gpu_verification import verified_capabilities
 from features.hardware.managed import ManagedDevices
 from features.hardware.localization import translate
+try:
+    from machine import is_container
+except ImportError:
+    try:
+        from installer_wizard.backend.machine import is_container
+    except ImportError:
+        def is_container() -> bool:
+            return os.environ.get("NUXIVA_CONTAINER", "").strip().lower() in ("1", "true", "yes", "on") or Path("/.dockerenv").exists()
 log = logging.getLogger('nuxiva.hardware')
 SCAN_INTERVAL = 4.0
 RETRY_AFTER = 3600.0
@@ -175,6 +183,9 @@ class HardwareService:
             store.touch()
 
     def start_provisioning(self, dev: HardwareDevice, approve: bool=False, refresh: bool=False) -> bool:
+        if is_container():
+            log.info("Ambiente container: provisioning disattivato per %s (gestione driver delegata all'host)", dev.name)
+            return False
 
         task = self._provisioning_tasks.get(dev.id)
         if task and (not task.done()):
@@ -203,12 +214,17 @@ class HardwareService:
                     nuxiva_bus.publish('ui.notification.notice', {'labelKey': 'os_device_connected', 'device': dev.brief()}, origin='hardware')
                 except Exception as exc:
                     log.error('Notifica connessione non pubblicata: %s', exc)
-            for dev_id, dev in current_map.items():
-                if dev.status in ('needs_driver', 'error') and self._may_attempt(dev_id):
-                    log.info('Dispositivo da configurare: %s (%s), avvio agente esperto', dev.name, dev.status)
-                    self.start_provisioning(dev)
-                elif dev.status == 'ready' and self._may_attempt(dev_id) and self._update_due(dev_id):
-                    self.start_provisioning(dev, refresh=True)
+            if not is_container():
+                for dev_id, dev in current_map.items():
+                    if dev.status in ('needs_driver', 'error') and self._may_attempt(dev_id):
+                        log.info('Dispositivo da configurare: %s (%s), avvio agente esperto', dev.name, dev.status)
+                        self.start_provisioning(dev)
+                    elif dev.status == 'ready' and self._may_attempt(dev_id) and self._update_due(dev_id):
+                        self.start_provisioning(dev, refresh=True)
+            else:
+                for dev_id, dev in current_map.items():
+                    if dev.status in ('needs_driver', 'error'):
+                        dev.details['container_managed'] = True
             for dev_id in removed_ids:
                 old_dev = previous_map[dev_id]
                 store.event('INFO', f'Dispositivo scollegato: {old_dev.name}', 'hardware')

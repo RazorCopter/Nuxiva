@@ -79,6 +79,13 @@ class NativeCoreTest(unittest.TestCase):
                      "ReadWritePaths=/opt/Nuxiva/data", "ExecStart=/opt/nuxiva-core/venv/bin/python -m server.cmd.main"):
             self.assertIn(line, unit)
 
+    def test_container_detection(self):
+        with mock.patch.dict(os.environ, {"NUXIVA_CONTAINER": "1"}):
+            self.assertTrue(machine.is_container())
+        with mock.patch.dict(os.environ, {"NUXIVA_CONTAINER": "0"}, clear=False):
+            with mock.patch.object(Path, "exists", return_value=False):
+                self.assertFalse(machine.is_container())
+
 
 class ScriptTest(unittest.TestCase):
     def _bash_cmd(self):

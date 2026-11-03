@@ -5,6 +5,7 @@ import shutil
 import time
 from dataclasses import dataclass
 
+from machine import is_container
 import packages
 from config import HEAL_SCRIPT, STEPS_DIR, read_env
 from state import store
@@ -249,12 +250,14 @@ async def _test_script(step: Step, action: str, stream: bool, quiet: bool = Fals
 async def run_step_action(step: Step, action: str, stream: bool = True, quiet: bool = False) -> tuple[int, str]:
     if _local_llm_step_skipped(step):
         return 0, ""
-    if not (STEPS_DIR / step.script).exists() or os.environ.get("NUXIVA_TEST_AUTH") == "1":
+    if is_container() or not (STEPS_DIR / step.script).exists() or os.environ.get("NUXIVA_TEST_AUTH") == "1":
         return await _test_script(step, action, stream, quiet)
     return await _run_script(step, action, stream, quiet)
 
 
 async def heal(step: Step) -> None:
+    if is_container():
+        return
     store.event("WARN", f"Auto-riparazione dopo errore in '{step.title}'", step.id)
     if not HEAL_SCRIPT.exists():
         await asyncio.sleep(1)
