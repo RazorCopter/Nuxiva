@@ -3,7 +3,7 @@
 **/*.pyc
 **/node_modules
 client_apk
-client_web
+# client_web - RIMOSSO: necessario per multi-stage build Docker
 client_satellite
 !client_satellite/context_bridge
 !client_satellite/windows_assistant
@@ -14,3 +14,6 @@ data
 installer_wizard/venv
 *.log
 ssh_debug*
+# Escludiamo solo i file generati di client_web, non la directory intera
+client_web/node_modules
+client_web/dist
