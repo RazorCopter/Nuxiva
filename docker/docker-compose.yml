@@ -2,13 +2,12 @@ name: nuxiva
 
 services:
   nuxiva-core:
-    image: nuxiva-core:local
-    pull_policy: build
     build:
       context: ..
       dockerfile: docker/core/Dockerfile
       args:
         NUXIVA_SRC_HASH: ${NUXIVA_SRC_HASH:-dev}
+    pull_policy: build
     container_name: nuxiva-core
     restart: unless-stopped
     network_mode: host
@@ -19,15 +18,18 @@ services:
       NUXIVA_ENV: production
       NUXIVA_HOST: 0.0.0.0
       NUXIVA_PORT: "8449"
-      OLLAMA_BASE_URL: ${NUXIVA_OLLAMA_URL:-http://127.0.0.1:11434}
+      # Endpoint OmniRoute (compatibilità Ollama e OpenAI)
+      OLLAMA_BASE_URL: http://10.0.0.105:20128
+      OPENAI_BASE_URL: http://10.0.0.105:20128/v1
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-sk-omniroute}
       QDRANT_HOST: 127.0.0.1
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ../data/db:/app/data/db
-      - ../data/certs:/app/data/certs
-      - ../data/models:/app/data/models
+      - nuxiva_db:/app/data/db
+      - nuxiva_certs:/app/data/certs
+      - nuxiva_models:/app/data/models
       - /run/nuxiva/sandbox:/run/nuxiva/sandbox
-      - /var/lib/nuxiva/brain:/run/nuxiva/brain:ro
+      - /var/lib/nuxiva/brain:/run/nuxiva/brain
     depends_on:
       - nuxiva-qdrant
 
@@ -39,23 +41,10 @@ services:
       - "127.0.0.1:6333:6333"
       - "127.0.0.1:6334:6334"
     volumes:
-      - ../data/qdrant:/qdrant/storage
+      - nuxiva_qdrant:/qdrant/storage
 
-  nuxiva-inference:
-    profiles: ["gpu"]
-    image: nuxiva-inference:local
-    pull_policy: build
-    build:
-      context: ..
-      dockerfile: docker/inference/Dockerfile
-    container_name: nuxiva-inference
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:8444:8444"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+volumes:
+  nuxiva_db:
+  nuxiva_certs:
+  nuxiva_models:
+  nuxiva_qdrant:
