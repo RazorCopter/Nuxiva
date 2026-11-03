@@ -4,6 +4,7 @@ from server.features.cognitive_flow.flow_service import cognitive_flow_service
 
 flow_router = APIRouter(prefix="/cognitive", tags=["cognitive"])
 
+@flow_router.get("/flow", response_model=Dict[str, Any])
 @flow_router.get("/flow/active", response_model=Dict[str, Any])
 async def get_active_cognitive_flow() -> Dict[str, Any]:
     flow = cognitive_flow_service.get_active_flow()

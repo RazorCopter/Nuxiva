@@ -142,12 +142,6 @@ async function updateLiveBiometricPill() {
   } catch (_) {}
   if (bpmLabel) bpmLabel.innerText = "— BPM";
   if (hrvLabel) hrvLabel.innerText = "— ms";
-} BPM`;
-  }
-  if (hrvLabel) {
-    const jitterHrv = (41.0 + (Math.random() * 3)).toFixed(1);
-    hrvLabel.innerText = `${jitterHrv} ms`;
-  }
 }
 
 function startRppgPulseWaveAnimation(canvas) {

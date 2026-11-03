@@ -124,13 +124,6 @@ function renderWearablesData(state) {
     });
   }
 }
-BPM`;
-  }
-  if (hrvLabel) {
-    const nextHrv = (47.5 + (Math.random() * 2)).toFixed(1);
-    hrvLabel.innerText = `${nextHrv} ms`;
-  }
-}
 
 function startWearableEcgAnimation(canvas) {
   const ctx = canvas.getContext("2d");

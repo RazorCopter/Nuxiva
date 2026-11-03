@@ -18,8 +18,6 @@ export class SettingsModalManager {
         if (e.target === this.overlay) this.close();
       });
     }
-  });
-    }
   }
 
   open() {

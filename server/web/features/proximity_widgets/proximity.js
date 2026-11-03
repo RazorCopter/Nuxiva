@@ -100,9 +100,6 @@ export class ProximityWidgetsManager {
     if (modeEl) modeEl.textContent = data.energy_mode;
   }
 
-catch (_) {}
-  }
-
   destroy() {
     if (this.pollInterval) clearInterval(this.pollInterval);
   }
