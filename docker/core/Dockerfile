@@ -15,6 +15,10 @@ WORKDIR /app
 
 COPY server/requirements.txt server/requirements.txt
 RUN pip install -r server/requirements.txt
+
+# Installa fastembed per embedding CPU-only (fallback quando /v1/embeddings non disponibile)
+RUN pip install fastembed
+
 RUN pip check \
     && python -c "import fastapi, uvicorn, pydantic_settings, sqlalchemy; from cryptography.fernet import Fernet; key = Fernet.generate_key(); cipher = Fernet(key); assert cipher.decrypt(cipher.encrypt(b'nuxiva-build-check')) == b'nuxiva-build-check'"
 
