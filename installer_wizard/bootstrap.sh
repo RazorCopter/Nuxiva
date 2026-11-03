@@ -13,11 +13,14 @@ LOG="$LOG_DIR/bootstrap.log"
 PREREQS=(git curl ca-certificates python3 python3-venv jq)
 WEIGHT=(0 10 15 45 2 25 3)
 
-# Phase 1: Base installation runs in English by default
-UI_LANG="${NUXIVA_BOOTSTRAP_LANG:-en}"
+UI_LANG="${NUXIVA_BOOTSTRAP_LANG:-}"
+UI_LANG_CHOSEN="${NUXIVA_LANG_CHOSEN:-0}"
 
 declare -A T
-if [ "$UI_LANG" = it ]; then
+DEC="."
+
+load_embedded() {
+if [ "$1" = it ]; then
     DEC=","
     T=(
         [title]="Installazione di base" [elapsed]="trascorsi" [total]="Totale" [eta]="fine prevista"
@@ -45,6 +48,8 @@ if [ "$UI_LANG" = it ]; then
         [port_busy]="La porta %s è occupata dal programma «%s»: chiudilo o disinstallalo e rilancia il comando."
         [safe]="Nuxiva è partita in modalità sicura e si sta riparando da sola: apri la pagina qui sotto per seguire la riparazione."
         [failed_after]="%s non riuscito dopo %d tentativi."
+        [apt_busy]="Aggiornamento automatico di Linux in corso, potrebbe richiedere minuti."
+        [apt_force]="Premi [Invio] se vuoi interromperlo forzatamente per installare Nuxiva (o usa --force-apt)"
         [reboot_wait]="Attendo la fine dell'installazione dei pacchetti prima del riavvio"
         [reboot_now]="Installazione di base completata. Riavvio tra 5 secondi per avviare la configurazione grafica..."
         [reboot_deferred]="«%s» sta ancora installando pacchetti: il sistema si riavvierà da solo appena finisce. Non spegnere il computer."
@@ -78,12 +83,83 @@ else
         [port_busy]="Port %s is used by the program \"%s\": close or uninstall it and run the command again."
         [safe]="Nuxiva started in safe mode and is repairing itself: open the page below to follow the repair."
         [failed_after]="%s failed after %d attempts."
+        [apt_busy]="Linux is updating itself automatically, this may take a few minutes."
+        [apt_force]="Press [Enter] to stop it and install Nuxiva right away (or use --force-apt)"
         [reboot_wait]="Waiting for package installation to finish before restarting"
         [reboot_now]="Base installation complete. Restarting in 5 seconds to launch the graphical setup..."
         [reboot_deferred]="\"%s\" is still installing packages: the system will restart by itself as soon as it finishes. Do not turn off the computer."
         [reboot_manual]="Automatic restart failed: wait for package installation to finish, then run: sudo systemctl reboot"
     )
 fi
+}
+
+LANG_RAW_BASE=""
+if [[ "$REPO_URL" =~ ^https://github\.com/([A-Za-z0-9._-]+/[A-Za-z0-9._-]+)$ ]]; then
+    _slug="${BASH_REMATCH[1]%.git}"
+    LANG_RAW_BASE="https://raw.githubusercontent.com/$_slug/$BRANCH/installer_wizard"
+fi
+
+fetch_support() {
+    [ -n "$LANG_RAW_BASE" ] || return 1
+    curl -fsSL --proto '=https' --tlsv1.2 --max-time 15 "$LANG_RAW_BASE/$1" -o "$2" 2>/dev/null
+}
+
+load_lang() {
+    local code=$1 tmp key value
+    [[ "$code" =~ ^[a-z]{2,3}$ ]] || code=en
+    load_embedded en
+    [ "$code" = en ] && return 0
+    if [ "$code" = it ]; then
+        load_embedded it
+        return 0
+    fi
+    tmp=$(mktemp -t nuxiva-lang-XXXXXX) || return 0
+    if fetch_support "bootstrap_language/$code.txt" "$tmp"; then
+        while IFS='=' read -r key value; do
+            [[ "$key" =~ ^[a-z0-9_]+$ ]] || continue
+            value=$(printf '%s' "$value" | tr -d '\000-\037\177')
+            if [ "$key" = dec ]; then
+                [ "$value" = "," ] && DEC=","
+            elif [ "$key" != name ] && [ -n "$value" ]; then
+                T[$key]=$value
+            fi
+        done <"$tmp"
+    fi
+    rm -f "$tmp"
+    return 0
+}
+
+choose_language() {
+    local default picker
+    if [ -n "$UI_LANG" ]; then
+        load_lang "$UI_LANG"
+        return 0
+    fi
+    load_lang en
+    default="${NUXIVA_LANG:-${LC_ALL:-${LC_MESSAGES:-${LANG:-en}}}}"
+    default="${default,,}"
+    default="${default%%.*}"
+    default="${default%%_*}"
+    UI_LANG=en
+    if [ -t 1 ] && [ "${TERM:-dumb}" != dumb ] && ( : </dev/tty ) 2>/dev/null; then
+        picker=$(mktemp -t nuxiva-picker-XXXXXX) || return 0
+        if [ -f "${BASH_SOURCE[0]%/*}/lang_picker.sh" ] && [ -n "${BASH_SOURCE[0]:-}" ]; then
+            cp "${BASH_SOURCE[0]%/*}/lang_picker.sh" "$picker"
+        else
+            fetch_support lang_picker.sh "$picker" || { rm -f "$picker"; return 0; }
+        fi
+        source "$picker"
+        rm -f "$picker"
+        lp_valid_code "$default" || default=en
+        pick_language "$default"
+        UI_LANG=${PICKED_LANG:-en}
+        UI_LANG_CHOSEN=1
+    elif [[ "$default" =~ ^[a-z]{2,3}$ ]]; then
+        UI_LANG=$default
+    fi
+    load_lang "$UI_LANG"
+}
+
 
 TTY=0
 if [ -t 1 ] && [ "${TERM:-dumb}" != dumb ]; then TTY=1; fi
@@ -441,10 +517,12 @@ die() {
 on_err() { die "${T[stopped]} $CUR (${T[line]} $1)"; }
 cleanup() { if [ "$TTY" = 1 ]; then printf '\033[?25h\033[?7h'; fi; }
 
+choose_language
+
 if [ "$EUID" -ne 0 ]; then
     if [ -f "$0" ] && command -v sudo >/dev/null 2>&1 && ( : </dev/tty ) 2>/dev/null; then
         echo "${T[sudo]}" >&2
-        exec sudo env "NUXIVA_BOOTSTRAP_LANG=$UI_LANG" "NUXIVA_REPO=$REPO_URL" "NUXIVA_BRANCH=$BRANCH" bash "$0" "$@" </dev/tty
+        exec sudo env "NUXIVA_BOOTSTRAP_LANG=$UI_LANG" "NUXIVA_LANG_CHOSEN=$UI_LANG_CHOSEN" "NUXIVA_REPO=$REPO_URL" "NUXIVA_BRANCH=$BRANCH" bash "$0" "$@" </dev/tty
     fi
     echo "${T[error]}: ${T[root]}" >&2
     echo "  curl -fsSL https://raw.githubusercontent.com/AprileNunzio/Nuxiva/main/install.sh | sudo bash" >&2
@@ -533,8 +611,8 @@ wait_apt() {
                 fi
             else
                 if [ "$TTY" = 1 ] && (( prompted == 0 )); then
-                    printf '\r\033[K\n%sAggiornamento automatico di Linux in corso, potrebbe richiedere minuti.%s\n' "$C_AMBER" "$C_OFF" >/dev/tty
-                    printf 'Premi [Invio] se vuoi interromperlo forzatamente per installare Nuxiva (o usa --force-apt)\n' >/dev/tty
+                    printf '\r\033[K\n%s%s%s\n' "$C_AMBER" "${T[apt_busy]}" "$C_OFF" >/dev/tty
+                    printf '%s\n' "${T[apt_force]}" >/dev/tty
                     prompted=1
                 fi
                 if (( prompted == 1 )); then
@@ -698,6 +776,10 @@ do_config() {
     chmod 600 /etc/nuxiva/nuxiva.env
     grep -q '^NUXIVA_UPDATE_BRANCH=' /etc/nuxiva/nuxiva.env || echo "NUXIVA_UPDATE_BRANCH=$BRANCH" >> /etc/nuxiva/nuxiva.env
     grep -q '^NUXIVA_AUTO_UPDATE=' /etc/nuxiva/nuxiva.env || echo "NUXIVA_AUTO_UPDATE=1" >> /etc/nuxiva/nuxiva.env
+    if [ "$UI_LANG_CHOSEN" = 1 ] && [[ "$UI_LANG" =~ ^[a-z]{2,3}$ ]]; then
+        sed -i '/^NUXIVA_UI_LANG=/d' /etc/nuxiva/nuxiva.env
+        echo "NUXIVA_UI_LANG=$UI_LANG" >> /etc/nuxiva/nuxiva.env
+    fi
     getent group nuxiva-admin >/dev/null || groupadd --system nuxiva-admin || return 1
     ADMINS=()
     for candidate in "${SUDO_USER:-}" "$(getent passwd 1000 | cut -d: -f1)"; do
