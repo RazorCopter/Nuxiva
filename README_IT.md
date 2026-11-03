@@ -37,15 +37,26 @@ Versione 5.3.0 · Debian / Ubuntu · [Nuxiva Personal and Commercial License 1.0
 
 Le funzioni che richiedono hardware (telecamera, microfono, GPU) si disattivano da sole se l'hardware manca. Una macchina piccola può usare un nodo Ollama remoto (`NUXIVA_OLLAMA_URL`) o modelli cloud.
 
-### Installazione
+### Preparazione del Sistema Consigliata (Debian Netinst)
+Per risparmiare memoria e massimizzare le prestazioni per i modelli neurali locali:
+1. **Installazione Debian**: Nella schermata di selezione del software, **disattivare** la modalita desktop e GNOME/KDE. Mantenere solo utilita di sistema standard ed eventualmente il server SSH.
+2. **Aggiornamento pacchetti**:
+   `ash
+   sudo apt update && sudo apt full-upgrade -y
+   sudo apt install -y curl sudo
+   `
+3. **Lancio del Bootstrap**:
+   `ash
+   curl -fsSL https://raw.githubusercontent.com/AprileNunzio/Nuxiva/main/install.sh | sudo bash
+   `
 
-Un solo comando:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/AprileNunzio/Nuxiva/main/install.sh | sudo bash
-```
-
-Oppure da un clone:
+### Sequenza di Attivazione Grafica
+Al primo riavvio dopo l installazione di base, parte la **Sequenza di Attivazione** a step:
+- Accessibile direttamente dallo schermo collegato o da qualsiasi computer via browser (http://<IP_HOST>).
+- Scelta della lingua di default.
+- Telemetria e percentuale di completamento in tempo reale con nucleo di sistema reattivo.
+- Carte visive 3D per le scelte facoltative (es. Ollama in locale vs server remoto o chiavi LLM esterne).
+- Persistenza atomica: in caso di spegnimento il setup riprende esattamente da dove era rimasto o permette di ricominciare da zero.Oppure da un clone:
 
 ```bash
 sudo git clone https://github.com/AprileNunzio/Nuxiva.git /opt/Nuxiva

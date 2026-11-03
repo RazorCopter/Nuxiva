@@ -77,7 +77,7 @@ async def public_index(request: Request, node: str = ""):
         from features.nodes.registry import registry
         if node in registry.data["nodes"]:
             NODE.set(node)
-    res = page("display/display.html" if store.phase in ("READY", "DEGRADED") else "monitor/monitor.html",
+    res = page("display/display.html" if store.phase in ("READY", "DEGRADED") else "activation/activation.html",
                page_language(request, admin=False))
     return _display_response(request, res)
 

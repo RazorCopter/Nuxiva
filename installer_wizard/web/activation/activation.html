@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="it" translate="no" data-i18n-scope="web/activation">
+<head>
+<meta charset="UTF-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-i18n="title">Nuxiva — Sequenza di Attivazione</title>
+<link rel="stylesheet" href="/static/shared/nuxiva.css">
+<link rel="stylesheet" href="/static/activation/activation.css">
+</head>
+<body class="holo-grid">
+<div class="activation-shell" id="app">
+  <div class="telemetry-backdrop" id="telemetry-backdrop" aria-hidden="true">
+    <div class="matrix-stream" id="stream-lines"></div>
+  </div>
+
+  <header class="activation-header">
+    <div class="brand">
+      <span class="brand-title">NUXIVA</span>
+      <span class="brand-tag" data-i18n="tag">OS</span>
+    </div>
+    <div class="header-status">
+      <span class="mono" id="clock">--:--:--</span>
+    </div>
+  </header>
+
+  <main class="activation-viewport">
+    <section class="reactor-pane">
+      <div class="reactor-container">
+        <canvas id="reactor-canvas" width="280" height="280"></canvas>
+        <div class="reactor-center">
+          <span class="pct-val mono" id="progress-pct">0%</span>
+          <span class="pct-lbl" data-i18n="lbl_completed">COMPLETATO</span>
+        </div>
+      </div>
+      <div class="status-summary">
+        <h1 class="sequence-title" id="current-title" data-i18n="initializing">Inizializzazione...</h1>
+        <p class="sequence-detail" id="current-detail"></p>
+      </div>
+    </section>
+
+    <section class="interactive-pane" id="interactive-pane">
+      <div class="stage-card" id="stage-language" hidden>
+        <h2 class="stage-heading" data-i18n="choose_language">Seleziona la lingua di sistema</h2>
+        <div class="lang-grid" id="lang-grid">
+          <button type="button" class="lang-btn" data-lang="it">Italiano</button>
+          <button type="button" class="lang-btn" data-lang="en">English</button>
+          <button type="button" class="lang-btn" data-lang="es">Español</button>
+          <button type="button" class="lang-btn" data-lang="fr">Français</button>
+        </div>
+        <button type="button" class="action-btn primary" id="btn-start" data-i18n="btn_start">Avvia installazione</button>
+      </div>
+
+      <div class="stage-card" id="stage-choice" hidden>
+        <div class="choice-header">
+          <h2 class="stage-heading" id="choice-title"></h2>
+          <p class="stage-desc" id="choice-desc"></p>
+        </div>
+        <div class="cards-grid" id="choice-cards"></div>
+        <div class="choice-footer">
+          <p class="choice-note" data-i18n="choice_later_note">Potrai installare questo componente anche in un secondo momento da Impostazioni > Pacchetti.</p>
+        </div>
+      </div>
+
+      <div class="stage-card" id="stage-progress" hidden>
+        <div class="terminal-card">
+          <div class="terminal-bar">
+            <span class="status-indicator"></span>
+            <span class="terminal-title mono" id="win-seq-name">sequence</span>
+          </div>
+          <div class="terminal-content">
+            <div class="telemetry-stats">
+              <div class="stat"><span data-i18n="stat_speed">Velocità:</span> <b class="mono" id="stat-speed">-</b></div>
+              <div class="stat"><span data-i18n="stat_elapsed">Tempo:</span> <b class="mono" id="stat-time">-</b></div>
+            </div>
+            <div class="console-box" id="console-log"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage-card" id="stage-failure" hidden>
+        <div class="failure-box">
+          <h2 class="stage-heading danger" data-i18n="failure_title">Attenzione: operazione interrotta</h2>
+          <p class="error-msg" id="failure-msg"></p>
+          <div class="failure-actions">
+            <button type="button" class="action-btn" id="btn-retry" data-i18n="btn_retry">Riprova</button>
+            <button type="button" class="action-btn secondary" id="btn-skip" data-i18n="btn_skip" hidden>Salta sequenza</button>
+            <button type="button" class="action-btn danger" id="btn-reset" data-i18n="btn_reset">Ricomincia da zero</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="/static/shared/core.js"></script>
+<script src="/static/activation/activation.js"></script>
+</body>
+</html>

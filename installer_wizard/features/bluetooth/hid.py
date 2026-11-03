@@ -2,8 +2,11 @@ import asyncio
 import hashlib
 import json
 import logging
-import pwd
 import re
+try:
+    import pwd
+except ImportError:
+    pwd = None
 
 from features.bluetooth import store
 from features.devices.audio import KIOSK_USER
@@ -16,6 +19,8 @@ TOOLS = {"xinput", "setxkbmap"}
 async def _x(tool: str, *args: str) -> tuple[int, str]:
     if tool not in TOOLS:
         raise ValueError("bluetooth_tool_not_allowed")
+    if pwd is None:
+        return 1, "pwd module not available"
     try:
         home = pwd.getpwnam(KIOSK_USER).pw_dir
     except KeyError:

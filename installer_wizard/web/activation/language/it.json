@@ -1,0 +1,18 @@
+{
+  "scope": "web/activation",
+  "dictionary": {
+    "title": "Nuxiva — Sequenza di Attivazione",
+    "tag": "OS",
+    "lbl_completed": "COMPLETATO",
+    "initializing": "Inizializzazione dei sistemi...",
+    "choose_language": "Seleziona la lingua di sistema",
+    "btn_start": "Avvia installazione",
+    "choice_later_note": "Potrai installare questo componente anche in un secondo momento da Impostazioni > Pacchetti.",
+    "stat_speed": "Velocità:",
+    "stat_elapsed": "Tempo:",
+    "failure_title": "Attenzione: operazione interrotta",
+    "btn_retry": "Riprova",
+    "btn_skip": "Salta sequenza",
+    "btn_reset": "Ricomincia da zero"
+  }
+}

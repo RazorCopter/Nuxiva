@@ -253,7 +253,7 @@ def build(admin: bool) -> FastAPI:
     if admin:
         pages.mount_static(app, "shared")
     else:
-        pages.mount_static(app, "shared", "display", "monitor", "screen", "setup")
+        pages.mount_static(app, "shared", "display", "monitor", "screen", "setup", "activation")
 
     if admin and (client_web_dist / "index.html").is_file():
         # Register before the assets mount: preview and desktop share one release.
