@@ -45,6 +45,10 @@ if [ "$UI_LANG" = it ]; then
         [port_busy]="La porta %s è occupata dal programma «%s»: chiudilo o disinstallalo e rilancia il comando."
         [safe]="Nuxiva è partita in modalità sicura e si sta riparando da sola: apri la pagina qui sotto per seguire la riparazione."
         [failed_after]="%s non riuscito dopo %d tentativi."
+        [reboot_wait]="Attendo la fine dell'installazione dei pacchetti prima del riavvio"
+        [reboot_now]="Installazione di base completata. Riavvio tra 5 secondi per avviare la configurazione grafica..."
+        [reboot_deferred]="«%s» sta ancora installando pacchetti: il sistema si riavvierà da solo appena finisce. Non spegnere il computer."
+        [reboot_manual]="Riavvio automatico non riuscito: attendi la fine dell'installazione dei pacchetti, poi esegui: sudo systemctl reboot"
     )
 else
     DEC="."
@@ -74,6 +78,10 @@ else
         [port_busy]="Port %s is used by the program \"%s\": close or uninstall it and run the command again."
         [safe]="Nuxiva started in safe mode and is repairing itself: open the page below to follow the repair."
         [failed_after]="%s failed after %d attempts."
+        [reboot_wait]="Waiting for package installation to finish before restarting"
+        [reboot_now]="Base installation complete. Restarting in 5 seconds to launch the graphical setup..."
+        [reboot_deferred]="\"%s\" is still installing packages: the system will restart by itself as soon as it finishes. Do not turn off the computer."
+        [reboot_manual]="Automatic restart failed: wait for package installation to finish, then run: sudo systemctl reboot"
     )
 fi
 
@@ -812,6 +820,50 @@ preflight() {
     wait_apt
 }
 
+reboot_progress() {
+    local shown
+    fmt_dur shown "$2"
+    if [ "$TTY" = 1 ]; then
+        printf '\r\033[K   %s%s %s %s %s %s%s' "$C_AMBER" "$G_RUN" "${T[reboot_wait]}" "$G_DOT" "$1" "$shown" "$C_OFF" >&2
+    elif (( REBOOT_NOTED == 0 )); then
+        printf '   %s %s %s\n' "${T[reboot_wait]}" "$G_DOT" "$1" >&2
+        REBOOT_NOTED=1
+    fi
+}
+
+restart_when_idle() {
+    local gate="$WIZ/reboot_gate.sh" who
+    REBOOT_NOTED=0
+    if [ ! -r "$gate" ]; then
+        echo -e "   ${C_RED}${G_BAD}${C_OFF} ${T[reboot_manual]}"
+        return 1
+    fi
+    source "$gate"
+    if ! who=$(reboot_gate_wait "${NUXIVA_REBOOT_WAIT:-2700}" reboot_progress); then
+        [ "$TTY" = 1 ] && printf '\r\033[K' >&2
+        if reboot_gate_defer 21600 >>"$LOG" 2>&1; then
+            printf -v who "${T[reboot_deferred]}" "$who"
+            echo -e "   ${C_AMBER}!${C_OFF} $who"
+            return 0
+        fi
+        echo -e "   ${C_RED}${G_BAD}${C_OFF} ${T[reboot_manual]}"
+        return 1
+    fi
+    [ "$TTY" = 1 ] && printf '\r\033[K' >&2
+    echo -e "   ${C_CYAN}>>> ${T[reboot_now]}${C_OFF}"
+    echo
+    sleep 5
+    REBOOT_GATE_LOG=$LOG reboot_gate_run 600 reboot_progress >>"$LOG" && return 0
+    [ "$TTY" = 1 ] && printf '\r\033[K' >&2
+    if who=$(reboot_gate_blocker) && reboot_gate_defer 21600 >>"$LOG" 2>&1; then
+        printf -v who "${T[reboot_deferred]}" "$who"
+        echo -e "   ${C_AMBER}!${C_OFF} $who"
+        return 0
+    fi
+    echo -e "   ${C_RED}${G_BAD}${C_OFF} ${T[reboot_manual]}"
+    return 1
+}
+
 WAIT_MAX=120
 step_begin 1
 preflight
@@ -841,8 +893,5 @@ else
     echo '{"phase": 2, "base_installed": true, "at": "'$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "")'"}' > /var/lib/nuxiva/install_state.json 2>/dev/null || true
     echo -e "   ${C_GREEN}${G_OK}${C_OFF} ${T[done]} ${C_DIM}(${total_dur})${C_OFF}"
     echo
-    echo -e "   ${C_CYAN}>>> Base installation complete. Rebooting system in 5 seconds to launch graphical setup...${C_OFF}"
-    echo
-    sleep 5
-    reboot || sudo reboot || systemctl reboot || true
+    restart_when_idle || exit 1
 fi

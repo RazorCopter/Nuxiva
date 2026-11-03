@@ -2,8 +2,12 @@
 set -Eeuo pipefail
 umask 027
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LANG_DIR="$SCRIPT_DIR/installer_wizard/language"
+SCRIPT_DIR=""
+SELF="${BASH_SOURCE[0]:-}"
+if [ -n "$SELF" ] && [ -f "$SELF" ]; then
+    SCRIPT_DIR="$(cd -P "$(dirname "$SELF")" && pwd)"
+fi
+LANG_DIR="${SCRIPT_DIR:-/nonexistent}/installer_wizard/language"
 
 detect_lang() {
     local l="${NUXIVA_LANG:-${LC_ALL:-${LC_MESSAGES:-${LANG:-en}}}}"
@@ -54,10 +58,10 @@ PY
     echo "[ERROR] $msg" >&2
 }
 
-BOOTSTRAP_LOCAL="$SCRIPT_DIR/installer_wizard/bootstrap.sh"
+BOOTSTRAP_LOCAL="${SCRIPT_DIR:+$SCRIPT_DIR/installer_wizard/bootstrap.sh}"
 BOOTSTRAP_URL="${NUXIVA_BOOTSTRAP_URL:-https://raw.githubusercontent.com/AprileNunzio/Nuxiva/main/installer_wizard/bootstrap.sh}"
 
-if [ -f "$BOOTSTRAP_LOCAL" ]; then
+if [ -n "$BOOTSTRAP_LOCAL" ] && [ -f "$BOOTSTRAP_LOCAL" ]; then
     exec bash "$BOOTSTRAP_LOCAL" "$@"
 fi
 
