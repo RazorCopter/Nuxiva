@@ -84,6 +84,9 @@ class UnifiedEmbeddingEngine:
                 if response.status_code == 404:
                     logger.warning("404 Not Found su %s - OmniRoute potrebbe non supportare /v1/embeddings", endpoint)
                     return False
+                if response.status_code == 502:
+                    logger.warning("502 Bad Gateway su %s - OmniRoute non supporta /v1/embeddings", endpoint)
+                    return False
                 return response.status_code in (200, 400, 422)  # 400/422 = formato ok, modello forse mancante
         except httpx.TimeoutException:
             logger.warning("Timeout connessione a %s", endpoint)
@@ -119,13 +122,20 @@ class UnifiedEmbeddingEngine:
         try:
             from server.core.hippocampus_router.onnx_embedding_engine import FastEmbedEngine
             self._local_engine = FastEmbedEngine(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
-            # Verifica che si carichi correttamente
-            result = self._local_engine.ensure_dimension()
-            if result.is_ok():
-                logger.info("Local FastEmbed engine initialized (dimension: %d)", result.unwrap())
+            # Verifica che si carichi correttamente chiamando ensure_dimension() come metodo
+            dim_result = self._local_engine.ensure_dimension()
+            if hasattr(dim_result, 'is_ok') and dim_result.is_ok():
+                logger.info("Local FastEmbed engine initialized (dimension: %d)", dim_result.unwrap())
                 return True
+            elif isinstance(dim_result, int) and dim_result > 0:
+                # Fallback se ensure_dimension() ritorna direttamente int
+                logger.info("Local FastEmbed engine initialized (dimension: %d)", dim_result)
+                return True
+            else:
+                logger.warning("FastEmbed dimension check failed: %s", dim_result)
+                return False
         except Exception as e:
-            logger.warning("Failed to initialize local embedding engine: %s", e)
+            logger.warning("Failed to initialize local embedding engine: %s", e, exc_info=True)
         return False
 
     async def embed(self, text: str) -> List[float]:
