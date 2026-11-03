@@ -13,6 +13,32 @@ Questo documento descrive come deployare Nuxiva su **Portainer** utilizzando un 
 
 ---
 
+## 🏗️ Architettura Deployment (Originale Nuxiva)
+
+Il deployment Docker utilizza l'**architettura completa originale** di Nuxiva con **multi-stage build**:
+
+### Stage 1: Frontend Builder
+Compila il frontend React (`client_web/`) con Vite → output in `client_web/dist/`
+
+### Stage 2: Nuxiva Supervisor Completo
+- **Supervisor principale**: `installer_wizard/backend/nuxiva_supervisor.py`
+- **Core backend**: `server/` (orchestrator, agenti, knowledge graph)
+- **Frontend compilato**: copiato in `installer_wizard/web/`
+
+### 🔌 Porte Esposte (Architettura Originale)
+
+| Porta | Descrizione | Accesso |
+|-------|-------------|---------|
+| **80** | **Porta pubblica**: Kiosk display, chat interattiva, wizard installazione | Pubblico |
+| **8080** | **Porta admin**: Cockpit amministrativo (autenticazione PAM), REST API, server MCP | Autenticato |
+| **8443** | **Core backend**: Supervisor interno, bus IPC protetto | Solo localhost |
+| **11434** | **Ollama**: Servizio inferenza modelli linguistici locali | Solo localhost |
+| **6333** | **Qdrant**: Vector database per embeddings e knowledge graph | Solo localhost |
+
+> 📖 Questa è l'architettura documentata nel repository originale [AprileNunzio/Nuxiva](https://github.com/AprileNunzio/Nuxiva)
+
+---
+
 ## 🔧 Configurazione Portainer Stack
 
 ### 1. Crea un nuovo Stack Git in Portainer
@@ -27,8 +53,9 @@ Questo documento descrive come deployare Nuxiva su **Portainer** utilizzando un 
 Nella sezione **"Environment variables"** di Portainer, aggiungi:
 
 ```env
-# Network & Port
-NUXIVA_PORT=8449
+# Network & Ports (Architettura Originale)
+NUXIVA_PUBLIC_PORT=8444    # Porta pubblica mappata su host (container usa 80)
+NUXIVA_ADMIN_PORT=8445     # Porta admin mappata su host (container usa 8080)
 
 # LLM Provider (usa "openai" per OmniRoute)
 LLM_PROVIDER=openai
@@ -43,10 +70,17 @@ OPENAI_API_KEY=sk-your-omniroute-inference-key
 DEFAULT_LLM_MODEL=Combinazione-Auto
 ```
 
+> 💡 **Accesso all'interfaccia dopo il deploy**:
+> - **Porta 8444** (`http://10.0.0.105:8444`): Interfaccia pubblica con wizard e chat
+> - **Porta 8445** (`http://10.0.0.105:8445`): Cockpit amministrativo (richiede autenticazione)
+
 ### 3. Deploy dello Stack
 
 1. Clicca su **"Deploy the stack"**
-2. Attendi che Portainer cloni il repository e avvii i container
+2. Portainer clonerà il repository ed eseguirà il **multi-stage build**:
+   - Compilerà il frontend React (può richiedere 2-5 minuti)
+   - Installerà le dipendenze Python
+   - Copierà il frontend compilato in `server/web/`
 3. Verifica i log di `nuxiva-core` per confermare l'avvio corretto
 
 ---
