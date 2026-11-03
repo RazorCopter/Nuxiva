@@ -3,8 +3,9 @@ name: nuxiva
 services:
   nuxiva-core:
     image: nuxiva-core:local
+    pull_policy: build
     build:
-      context: .
+      context: ..
       dockerfile: docker/core/Dockerfile
       args:
         NUXIVA_SRC_HASH: ${NUXIVA_SRC_HASH:-dev}
@@ -22,9 +23,9 @@ services:
       QDRANT_HOST: 127.0.0.1
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ./data/db:/app/data/db
-      - ./data/certs:/app/data/certs
-      - ./data/models:/app/data/models
+      - ../data/db:/app/data/db
+      - ../data/certs:/app/data/certs
+      - ../data/models:/app/data/models
       - /run/nuxiva/sandbox:/run/nuxiva/sandbox
       - /var/lib/nuxiva/brain:/run/nuxiva/brain:ro
     depends_on:
@@ -38,14 +39,15 @@ services:
       - "127.0.0.1:6333:6333"
       - "127.0.0.1:6334:6334"
     volumes:
-      - ./data/qdrant:/qdrant/storage
+      - ../data/qdrant:/qdrant/storage
 
   nuxiva-inference:
     profiles: ["gpu"]
-    build:
-      context: .
-      dockerfile: docker/inference/Dockerfile
     image: nuxiva-inference:local
+    pull_policy: build
+    build:
+      context: ..
+      dockerfile: docker/inference/Dockerfile
     container_name: nuxiva-inference
     restart: unless-stopped
     ports:
