@@ -7,7 +7,7 @@ COPY client_web/package*.json ./
 RUN npm ci --no-audit
 
 COPY client_web/ ./
-RUN npm run build
+RUN npm run build --ignore-scripts
 
 # Stage 2: Nuxiva Supervisor completo (architettura originale)
 FROM python:3.11-slim-bookworm
@@ -55,8 +55,8 @@ RUN pip install fastembed
 RUN pip check \
     && python -c "import fastapi, uvicorn, pydantic_settings; from cryptography.fernet import Fernet; key = Fernet.generate_key(); cipher = Fernet(key); assert cipher.decrypt(cipher.encrypt(b'nuxiva-build-check')) == b'nuxiva-build-check'"
 
-# Copia frontend compilato in installer_wizard/web
-COPY --from=frontend-builder /build/dist ./installer_wizard/web
+# Copia frontend compilato in client_web/dist (richiesto da nuxiva_supervisor)
+COPY --from=frontend-builder /build/dist ./client_web/dist
 
 # Crea directory per stato e configurazione
 RUN mkdir -p /etc/nuxiva /var/lib/nuxiva /var/log/nuxiva
@@ -69,7 +69,7 @@ EXPOSE 80 8080 8443
 
 # Healthcheck su porta pubblica
 HEALTHCHECK --interval=15s --timeout=5s --start-period=40s --retries=4 \
-    CMD curl -fsS "http://127.0.0.1:${NUXIVA_PUBLIC_PORT}/health" || exit 1
+    CMD curl -fsS "http://127.0.0.1:${NUXIVA_PUBLIC_PORT}/healthz" || curl -fsS "http://127.0.0.1:${NUXIVA_PUBLIC_PORT}/health" || exit 1
 
 # Avvia supervisor con safe mode
 CMD ["python", "-m", "installer_wizard.backend.nuxiva_launch"]

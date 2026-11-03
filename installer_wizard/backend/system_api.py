@@ -90,7 +90,9 @@ async def public_screen(request: Request):
 
 
 @public_routes.get("/healthz")
+@public_routes.get("/health")
 @admin_routes.get("/healthz")
+@admin_routes.get("/health")
 async def healthz():
     return {"ok": True, "phase": store.phase}
 

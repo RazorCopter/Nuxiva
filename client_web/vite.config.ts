@@ -1,7 +1,13 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import fs from 'node:fs';
+
+const rootPath = process.platform === 'win32' && fs.realpathSync?.native
+  ? fs.realpathSync.native(process.cwd())
+  : process.cwd();
 
 export default defineConfig({
+  root: rootPath,
   plugins: [react()],
   build: {
     chunkSizeWarningLimit: 700,
