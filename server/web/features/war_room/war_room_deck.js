@@ -7,6 +7,28 @@ export async function initProjectsDeck() {
   });
   document.getElementById("btn-recruit-agent")?.addEventListener("click", recruitAgentToCurrentProject);
 
+  document.getElementById("btn-modal-new-project")?.addEventListener("click", async () => {
+    const name = prompt("Nome del nuovo progetto:", "Sviluppo Autonomo");
+    if (!name) return;
+    const goal = prompt("Obiettivo del progetto:", "Esecuzione compiti e coordinamento agenti 24/7");
+    if (!goal) return;
+    try {
+      const res = await fetch("/api/v1/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, goal, autonomous_247: true })
+      });
+      const data = await res.json();
+      await loadProjectsList();
+      if (data && data.project) {
+        currentSelectedProjectId = data.project.project_id;
+        renderProjectDetails(data.project);
+      }
+    } catch (e) {
+      console.error("Errore creazione progetto:", e);
+    }
+  });
+
   await loadProjectsList();
 }
 

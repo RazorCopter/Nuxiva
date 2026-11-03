@@ -103,7 +103,7 @@ function renderEmergencyUi(data) {
             <span class="contact-item-name">${c.name}</span>
             <span class="contact-item-role">${c.relationship} &bull; ${c.phone_number}</span>
           </div>
-          <span class="contact-item-channels">${c.notification_channels.join(" + ")}</span>
+          <span class="contact-item-channels">${(c.notification_channels || [c.notify_by_sms ? "SMS" : null, c.notify_by_call ? "VOCE" : null].filter(Boolean)).join(" + ") || "Attivo"}</span>
         </div>
       `).join("");
     }

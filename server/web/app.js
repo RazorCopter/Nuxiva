@@ -12,27 +12,36 @@ import { applyDomTranslations } from "./shared/i18n/dom_translator.js";
 let currentSelectedAgentId = "windows_system_agent";
 
 document.addEventListener("DOMContentLoaded", () => {
-  initI18n();
-  initDeckNavigation();
-  initProjectsDeck();
-  initCognitiveFlowDeck();
-  initAgentVaultDeck();
-  initRbacDeck();
-  initProximityHudDeck();
-  initCadMediaDeck();
-  initTelemetryDeck();
-  initChatbotMeshDeck();
-  initMultimodalSurveillance();
-  initHumanAffectiveEngine();
-  initWearableVitalsHub();
-  initUserPresenceVitals();
-  initCognitiveTriageAgents();
-  initAdminWizard();
-  initGlobalCommandBar();
+  const safe = (fn) => {
+    try {
+      const res = fn();
+      if (res && typeof res.catch === "function") res.catch(err => console.error(err));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  safe(initI18n);
+  safe(initDeckNavigation);
+  safe(initProjectsDeck);
+  safe(initCognitiveFlowDeck);
+  safe(initAgentVaultDeck);
+  safe(initRbacDeck);
+  safe(initProximityHudDeck);
+  safe(initCadMediaDeck);
+  safe(initTelemetryDeck);
+  safe(initChatbotMeshDeck);
+  safe(initMultimodalSurveillance);
+  safe(initHumanAffectiveEngine);
+  safe(initWearableVitalsHub);
+  safe(initUserPresenceVitals);
+  safe(initCognitiveTriageAgents);
+  safe(initAdminWizard);
+  safe(initGlobalCommandBar);
 
   setInterval(() => {
-    refreshActiveProject();
-    refreshProximityHud();
+    safe(refreshActiveProject);
+    safe(refreshProximityHud);
   }, 4000);
 });
 
