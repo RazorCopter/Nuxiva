@@ -13,7 +13,7 @@ services:
     ports:
       - "${NUXIVA_PUBLIC_PORT:-8444}:80" # Porta pubblica: kiosk, chat, wizard (mappata su 8444)
       - "${NUXIVA_ADMIN_PORT:-8445}:8080" # Porta admin: cockpit, REST API, MCP (mappata su 8445)
-      - "127.0.0.1:8443:8443" # Core backend (solo localhost)
+      - "${NUXIVA_CORE_PORT:-8443}:8443" # Core backend FastAPI (accessibile dall'host/LAN)
     env_file:
       - path: /etc/nuxiva/nuxiva.env
         required: false

@@ -1,4 +1,7 @@
-import cv2
+try:
+    import cv2
+except ImportError:
+    cv2 = None
 import numpy as np
 
 from features.camsense.model import SenseError
@@ -10,6 +13,8 @@ MAX_PIXELS = 40_000_000
 
 
 def decode(jpeg: bytes) -> np.ndarray:
+    if cv2 is None:
+        raise SenseError("opencv_missing", 503)
     if not jpeg or len(jpeg) > 20_000_000:
         raise SenseError("frame_unavailable", 502)
     image = cv2.imdecode(np.frombuffer(jpeg, np.uint8), cv2.IMREAD_COLOR)

@@ -33,6 +33,7 @@ import node_commands_api
 from features.update_center import api as update_center_api
 import updater
 from config import ADMIN_PORT, PUBLIC_PORT, VERSION, env_get
+from machine import is_container
 from origin_guard import OriginGuard
 from nuxiva_bus import nuxiva_bus
 from feature_registry import registry
@@ -462,13 +463,33 @@ async def main() -> None:
             )
         ),
     ]
+    core_port = int(os.environ.get("NUXIVA_PORT", os.environ.get("NUXIVA_CORE_PORT", 8443)))
+    if is_container():
+        try:
+            from server.cmd.main import app as core_app
+            servers.append(
+                uvicorn.Server(
+                    uvicorn.Config(
+                        core_app,
+                        host="0.0.0.0",
+                        port=core_port,
+                        log_level="warning",
+                        timeout_graceful_shutdown=3,
+                    )
+                )
+            )
+            log.info("Nuxiva Core backend integrato attivo su porta :%d", core_port)
+        except Exception as exc:
+            log.exception("Impossibile avviare il Core backend in-container: %s", exc)
+
     https = secure_server()
+    core_info = f" — core :{core_port}" if is_container() else ""
     log.info(
         "Nuxiva OS Supervisor v%s — utente :%d — admin :%d%s",
         VERSION,
         PUBLIC_PORT,
         ADMIN_PORT,
-        "",
+        core_info,
     )
     for name, factory, period in BACKGROUND:
         loop_supervisor.add(name, factory, period)
