@@ -55,6 +55,17 @@ class LanguageFilesTest(unittest.TestCase):
             for key, value in parse(path).items():
                 self.assertEqual(pattern.findall(value), pattern.findall(reference[key]), f"{path.name}:{key}")
 
+    def test_declared_languages_are_exactly_the_translated_ones(self):
+        config = (WIZ / "backend" / "config.py").read_text(encoding="utf-8")
+        block = re.search(r"UI_LANGUAGES = \{(.*?)\}", config, re.S).group(1)
+        declared = set(re.findall(r'"([a-z]{2})":', block))
+        picker = set(re.findall(r'"([a-z]{2})\|', PICKER.read_text(encoding="utf-8")))
+        files = {p.stem for p in codes()}
+        self.assertEqual(declared, picker)
+        self.assertEqual(declared, files)
+        for folder in (WIZ / "features" / "hardware" / "language", WIZ / "language"):
+            self.assertTrue(all((folder / f"{c}.json").exists() for c in declared), folder)
+
     def test_no_control_characters(self):
         for path in codes():
             self.assertIsNone(re.search(r"[\x00-\x08\x0b-\x1f\x7f]", path.read_text(encoding="utf-8")), path.name)

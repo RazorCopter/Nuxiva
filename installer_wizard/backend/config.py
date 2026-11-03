@@ -32,12 +32,7 @@ CORE_URL = os.environ.get("NUXIVA_CORE_URL", "http://127.0.0.1:8443")
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
 
 VERSION = "5.3.0"
-UI_LANGUAGES = {"it": "Italiano", "en": "English", "fr": "Français", "es": "Español", "de": "Deutsch", "pt": "Português",
-                "nl": "Nederlands", "pl": "Polski", "ro": "Română", "ru": "Русский", "uk": "Українська", "el": "Ελληνικά",
-                "tr": "Türkçe", "ar": "العربية", "he": "עברית", "fa": "فارسی", "zh": "中文", "ja": "日本語", "ko": "한국어",
-                "hi": "हिन्दी", "sv": "Svenska", "da": "Dansk", "nb": "Norsk", "fi": "Suomi", "cs": "Čeština", "hu": "Magyar",
-                "sq": "Shqip", "hr": "Hrvatski", "bg": "Български", "vi": "Tiếng Việt", "th": "ไทย", "id": "Bahasa Indonesia",
-                "ms": "Bahasa Melayu"}
+UI_LANGUAGES = {"it": "Italiano", "en": "English", "fr": "Français", "es": "Español"}
 
 for _d in (ETC_DIR, STATE_DIR, LOG_DIR):
     _d.mkdir(parents=True, exist_ok=True)
@@ -56,7 +51,7 @@ EDITABLE_KEYS = {
     "NUXIVA_OLLAMA_URL": "Server Ollama (vuoto = locale; es. http://192.168.1.50:11434 per usare un altro server)",
     "NUXIVA_ASSISTANT_NAME": "Nome dell'assistente (predefinito NUXIVA)",
     "NUXIVA_USER_NAME": "Nome dell'utente principale (come Nuxiva ti chiama)",
-    "NUXIVA_UI_LANG": "Lingua dell'interfaccia del display e del pannello (it, en, fr)",
+    "NUXIVA_UI_LANG": "Lingua dell'interfaccia del display e del pannello (it, en, fr, es)",
     "NUXIVA_LOCATION": "Posizione predefinita (nome; si imposta meglio da Audio e posizione)",
     "NUXIVA_LOCATION_MODE": "Posizione: auto (display/Wi-Fi più precisi) o fixed (sempre la predefinita)",
     "NUXIVA_LOCATION_LAT": "Latitudine della posizione predefinita",
