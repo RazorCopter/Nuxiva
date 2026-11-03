@@ -39,8 +39,15 @@ COPY installer_wizard ./installer_wizard
 # Copia server (core backend)
 COPY server ./server
 
-# Copia scripts di sistema
+# Copia sandbox_broker (gestione sandbox e isolamento)
+COPY sandbox_broker ./sandbox_broker
+
+# Copia client_satellite (agenti satellite edge/bridge)
+COPY client_satellite ./client_satellite
+
+# Copia scripts di sistema e metadati
 COPY scripts ./scripts
+COPY VERSION ./VERSION
 
 # Installa dipendenze installer_wizard
 RUN pip install -r installer_wizard/backend/requirements.txt
@@ -53,7 +60,7 @@ RUN pip install fastembed
 
 # Verifica build
 RUN pip check \
-    && python -c "import fastapi, uvicorn, pydantic_settings; from cryptography.fernet import Fernet; key = Fernet.generate_key(); cipher = Fernet(key); assert cipher.decrypt(cipher.encrypt(b'nuxiva-build-check')) == b'nuxiva-build-check'"
+    && python -c "import fastapi, uvicorn, pydantic_settings, sandbox_broker; from cryptography.fernet import Fernet; key = Fernet.generate_key(); cipher = Fernet(key); assert cipher.decrypt(cipher.encrypt(b'nuxiva-build-check')) == b'nuxiva-build-check'"
 
 # Copia frontend compilato in client_web/dist (richiesto da nuxiva_supervisor)
 COPY --from=frontend-builder /build/dist ./client_web/dist

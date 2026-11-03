@@ -118,6 +118,6 @@ Architettura basata su: [github.com/AprileNunzio/Nuxiva](https://github.com/Apri
 La porta admin (8080) nell'architettura originale richiede **autenticazione PAM** (root/admin). 
 Nel container Docker potrebbe essere necessario configurare utenti/credenziali o disabilitare PAM per test.
 
-### 🐛 Problema Windows (Secondario)
-L'errore `import.meta.glob` con percorsi `../../../../../../c:/` resta **solo in sviluppo locale Windows**. 
-Non impatta il deployment Docker Linux che usa il frontend pre-compilato.
+### 🐛 Risoluzione ModuleNotFoundError: 'sandbox_broker' in Safe Mode
+- **Causa**: All'avvio del container in Portainer, `nuxiva_launch` entrava in Safe Mode a causa del mancato modulo `sandbox_broker`, non incluso nelle direttive `COPY` del Dockerfile.
+- **Soluzione**: Aggiunta la copia esplicita di `sandbox_broker`, `client_satellite` e del file `VERSION` in `/opt/Nuxiva` nel `Dockerfile` di runtime e aggiunto controllo di importazione `sandbox_broker` nello step di verifica build `RUN pip check && python -c ...`.
