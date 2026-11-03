@@ -37,6 +37,7 @@ class ZeroTrustMiddleware(BaseHTTPMiddleware):
             or path.startswith("/api/v1/projects")
             or path.startswith("/api/v1/agents")
             or path.startswith("/api/v1/chatbot")
+            or path.startswith("/api/brains")  # Brain Center discovery modelli (pubblico)
             or request.method == "OPTIONS"
         ):
             return await call_next(request)
