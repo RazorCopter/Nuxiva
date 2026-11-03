@@ -132,6 +132,11 @@ def create_application() -> FastAPI:
     from server.core.plasticity.api import router as plasticity_router
     app.include_router(skill_forge_router)
     app.include_router(plasticity_router)
+    
+    # Brain Center router per discovery modelli OmniRoute
+    from server.features.brain_center.controller import brain_center_router
+    app.include_router(brain_center_router)
+    
     app.include_router(router)
     app.include_router(router_v2)
 
