@@ -20,7 +20,7 @@ class CognitiveTriageController {
 
   async loadTranslations() {
     try {
-      const res = await fetch('/features/cognitive_triage_agents/i18n.json');
+      const res = await fetch('/static/features/cognitive_triage_agents/i18n.json');
       if (res.ok) {
         this.translations = await res.json();
         this.applyTranslations();

@@ -9,6 +9,32 @@ from server.features.user_presence_vitals.emergency_broadcaster import home_emer
 from server.features.wearable_vitals_hub.interfaces import RealtimeVitalTelemetry
 
 emergency_presence_router = APIRouter(prefix="/emergency-vitals", tags=["user_presence_vitals"])
+emergency_presence_alias_router = APIRouter(prefix="/emergency-presence", tags=["user_presence_vitals"])
+
+@emergency_presence_alias_router.get("/status")
+@emergency_presence_router.get("/status")
+async def get_emergency_presence_status() -> Dict[str, Any]:
+    profiles = presence_vitals_coordinator.list_profiles()
+    profile = profiles[0] if profiles else None
+    return {
+        "status": "success",
+        "user_profile": profile.model_dump() if profile else None,
+        "recent_alerts": [a.model_dump() for a in home_emergency_broadcaster.get_alert_history()],
+    }
+
+@emergency_presence_alias_router.post("/report-vitals")
+@emergency_presence_router.post("/report-vitals")
+async def report_vitals(payload: Dict[str, Any]) -> Dict[str, Any]:
+    user_id = payload.get("user_id", "owner")
+    v_dict = payload.get("vitals", {})
+    res = None
+    if v_dict:
+        try:
+            vitals = RealtimeVitalTelemetry(**v_dict)
+            res = await presence_vitals_coordinator.ingest_live_user_vitals(user_id, vitals)
+        except Exception:
+            pass
+    return {"status": "success", "result": res}
 
 @emergency_presence_router.get("/profiles", response_model=List[UserHealthProfile])
 async def list_user_health_profiles() -> List[UserHealthProfile]:

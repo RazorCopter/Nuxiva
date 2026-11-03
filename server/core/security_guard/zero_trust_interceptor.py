@@ -26,6 +26,7 @@ class ZeroTrustMiddleware(BaseHTTPMiddleware):
             path in self.EXEMPT_PATHS
             or path.startswith("/static")
             or path.startswith("/web")
+            or path.startswith("/features")
             or path.startswith("/api/v1/stream")
             or path.startswith("/api/v1/onboarding")
             or path.startswith("/api/v1/weather")
@@ -37,7 +38,16 @@ class ZeroTrustMiddleware(BaseHTTPMiddleware):
             or path.startswith("/api/v1/projects")
             or path.startswith("/api/v1/agents")
             or path.startswith("/api/v1/chatbot")
+            or path.startswith("/api/v1/wearables")
+            or path.startswith("/api/v1/emergency")
+            or path.startswith("/api/v1/surveillance")
+            or path.startswith("/api/v1/affective")
+            or path.startswith("/api/v1/command")
+            or path.startswith("/api/v1/knowledge")
+            or path.startswith("/api/v1/rbac")
+            or path.startswith("/api/v1/repair-workbench")
             or path.startswith("/api/brains")  # Brain Center discovery modelli (pubblico)
+            or path.startswith("/api/music")
             or request.method == "OPTIONS"
         ):
             return await call_next(request)

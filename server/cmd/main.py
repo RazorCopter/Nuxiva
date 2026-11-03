@@ -143,6 +143,8 @@ def create_application() -> FastAPI:
     web_dir = Path(__file__).resolve().parent.parent / "web"
     if web_dir.exists():
         app.mount("/static", StaticFiles(directory=str(web_dir)), name="static")
+        if (web_dir / "features").exists():
+            app.mount("/features", StaticFiles(directory=str(web_dir / "features")), name="features")
 
         @app.get("/")
         async def serve_index():
