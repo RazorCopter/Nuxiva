@@ -25,16 +25,19 @@ def _secret() -> bytes:
 def _is_admin_user(username: str) -> bool:
     if os.environ.get("NUXIVA_TEST_AUTH") == "1" and username in ("admin", "user"):
         return True
+    admin_env_user = os.environ.get("NUXIVA_ADMIN_USER", "").strip() or "admin"
+    if os.environ.get("NUXIVA_ADMIN_PASSWORD") and username == admin_env_user:
+        return True
     if username == "root":
         return True
-    import grp
-    import pwd
     try:
+        import grp
+        import pwd
         primary = grp.getgrgid(pwd.getpwnam(username).pw_gid).gr_name
-    except KeyError:
+        groups = {g.gr_name for g in grp.getgrall() if username in g.gr_mem} | {primary}
+        return bool(groups & ADMIN_GROUPS)
+    except Exception:
         return False
-    groups = {g.gr_name for g in grp.getgrall() if username in g.gr_mem} | {primary}
-    return bool(groups & ADMIN_GROUPS)
 
 
 def rate_limited(ip: str) -> bool:
@@ -50,13 +53,18 @@ def authenticate(username: str, password: str, ip: str) -> bool:
     ok = False
     if username and password:
         if os.environ.get("NUXIVA_TEST_AUTH") == "1":
-            ok = username == "admin" and password == "nuxiva"
+            ok = username in ("admin", "user") and password == "nuxiva"
         else:
-            try:
-                import pam
-                ok = pam.pam().authenticate(username, password, service="nuxiva-admin") and _is_admin_user(username)
-            except Exception:
-                ok = False
+            admin_pwd = os.environ.get("NUXIVA_ADMIN_PASSWORD")
+            admin_user = os.environ.get("NUXIVA_ADMIN_USER", "").strip() or "admin"
+            if admin_pwd and hmac.compare_digest(username, admin_user) and hmac.compare_digest(password, admin_pwd):
+                ok = True
+            else:
+                try:
+                    import pam
+                    ok = pam.pam().authenticate(username, password, service="nuxiva-admin") and _is_admin_user(username)
+                except Exception:
+                    ok = False
     if not ok:
         _failures.setdefault(ip, []).append(time.time())
     return ok

@@ -200,5 +200,39 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(mock_debug.call_count, 1)
 
 
+class AuthEnvTest(unittest.TestCase):
+    def setUp(self):
+        auth._failures.clear()
+
+    def test_admin_env_credentials_and_custom_username(self):
+        with mock.patch.dict(os.environ, {"NUXIVA_ADMIN_USER": "superadmin", "NUXIVA_ADMIN_PASSWORD": "SecretPassword123!"}, clear=False):
+            # Rifiuta se NUXIVA_TEST_AUTH è impostato o se credenziali errate
+            with mock.patch.dict(os.environ, {"NUXIVA_TEST_AUTH": "0"}):
+                self.assertTrue(auth.authenticate("superadmin", "SecretPassword123!", "127.0.0.1"))
+                self.assertFalse(auth.authenticate("superadmin", "WrongPassword", "127.0.0.1"))
+                self.assertFalse(auth.authenticate("wronguser", "SecretPassword123!", "127.0.0.1"))
+                self.assertTrue(auth._is_admin_user("superadmin"))
+                self.assertTrue(auth._is_admin_user("root"))
+
+    def test_admin_env_default_user_is_admin(self):
+        with mock.patch.dict(os.environ, {"NUXIVA_ADMIN_PASSWORD": "DefaultAdminPassword"}, clear=False):
+            with mock.patch.dict(os.environ, {"NUXIVA_TEST_AUTH": "0"}):
+                # Nessun NUXIVA_ADMIN_USER impostato -> default "admin"
+                if "NUXIVA_ADMIN_USER" in os.environ:
+                    del os.environ["NUXIVA_ADMIN_USER"]
+                self.assertTrue(auth.authenticate("admin", "DefaultAdminPassword", "10.0.0.1"))
+                self.assertFalse(auth.authenticate("admin", "BadPassword", "10.0.0.1"))
+                self.assertTrue(auth._is_admin_user("admin"))
+
+    def test_rate_limiting_triggers_after_repeated_failures(self):
+        ip = "192.168.1.99"
+        with mock.patch.dict(os.environ, {"NUXIVA_TEST_AUTH": "0", "NUXIVA_ADMIN_PASSWORD": "password"}):
+            for _ in range(5):
+                auth.authenticate("admin", "wrong", ip)
+            self.assertTrue(auth.rate_limited(ip))
+            # Anche fornendo la password corretta, il login viene bloccato da rate limit
+            self.assertFalse(auth.authenticate("admin", "password", ip))
+
+
 if __name__ == "__main__":
     unittest.main()

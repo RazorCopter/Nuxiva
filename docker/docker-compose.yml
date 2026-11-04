@@ -26,6 +26,11 @@ services:
       NUXIVA_CORE_URL: http://127.0.0.1:8443
       NUXIVA_ALLOWED_HOSTS: ${NUXIVA_ALLOWED_HOSTS:-*}
 
+      # Credenziali Admin Console Web (LoginView / Control Panel)
+      # Se impostate, consentono l'accesso immediato alla console web
+      NUXIVA_ADMIN_USER: ${NUXIVA_ADMIN_USER:-admin}
+      NUXIVA_ADMIN_PASSWORD: ${NUXIVA_ADMIN_PASSWORD:-}
+
       # LLM Provider Configuration
       # Usa "openai" per endpoint OpenAI-compatible (es. OmniRoute)
       # Usa "ollama" per istanza Ollama locale nativa
