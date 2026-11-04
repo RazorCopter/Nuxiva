@@ -158,6 +158,47 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
             self.assertFalse(proxy.allowed(self.socket("192.168.1.20", headers=forged)))
             self.assertFalse(proxy.allowed(self.socket("192.168.1.20", headers={"authorization": "Bearer good"})))
 
+    async def test_proxy_upstream_unavailable_is_handled_and_throttled(self):
+        fake_ws = mock.AsyncMock()
+        fake_ws.client = SimpleNamespace(host="127.0.0.1")
+        fake_ws.cookies = {}
+        fake_ws.query_params = {}
+        fake_ws.headers = {}
+
+        err = OSError(111, "Connect call failed ('127.0.0.1', 8093)")
+        with mock.patch("features.ear.proxy.websockets.connect", side_effect=err), \
+             mock.patch("features.ear.proxy.asyncio.sleep", new_callable=mock.AsyncMock):
+            # Test caso bare-metal
+            with mock.patch("features.ear.proxy.is_container", return_value=False):
+                proxy._last_refused_log = 0.0
+                with mock.patch.object(proxy.logger, "info") as mock_info, \
+                     mock.patch.object(proxy.logger, "debug") as mock_debug:
+                    await proxy.proxy(fake_ws)
+                    self.assertEqual(mock_info.call_count, 1)
+                    self.assertTrue(fake_ws.accept.called)
+                    self.assertTrue(fake_ws.close.called)
+
+                    mock_info.reset_mock()
+                    mock_debug.reset_mock()
+                    await proxy.proxy(fake_ws)
+                    self.assertEqual(mock_info.call_count, 0)
+                    self.assertEqual(mock_debug.call_count, 1)
+
+            # Test caso container Docker
+            with mock.patch("features.ear.proxy.is_container", return_value=True):
+                proxy._last_refused_log = 0.0
+                with mock.patch.object(proxy.logger, "info") as mock_info, \
+                     mock.patch.object(proxy.logger, "debug") as mock_debug:
+                    await proxy.proxy(fake_ws)
+                    self.assertEqual(mock_info.call_count, 1)
+                    self.assertIn("delegato", mock_info.call_args[0][0])
+
+                    mock_info.reset_mock()
+                    mock_debug.reset_mock()
+                    await proxy.proxy(fake_ws)
+                    self.assertEqual(mock_info.call_count, 0)
+                    self.assertEqual(mock_debug.call_count, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

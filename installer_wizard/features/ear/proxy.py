@@ -1,5 +1,7 @@
 import asyncio
+import errno
 import logging
+import time
 from typing import Any
 
 import websockets
@@ -8,10 +10,64 @@ from fastapi import WebSocket, WebSocketDisconnect
 import auth
 from features.authz.heard import heard
 
+try:
+    from machine import is_container
+except ImportError:
+    def is_container() -> bool:
+        return False
+
 logger = logging.getLogger("nuxiva.ear.proxy")
 UPSTREAM = "ws://127.0.0.1:8093"
 MAX_MESSAGE = 2 ** 22
 DENIED = 4401
+
+_last_refused_log: float = 0.0
+_REFUSED_COOLDOWN: float = 60.0
+
+
+def _is_refused(exc: BaseException) -> bool:
+    if isinstance(exc, ConnectionRefusedError):
+        return True
+    if isinstance(exc, OSError):
+        err = getattr(exc, "errno", None)
+        if err in (errno.ECONNREFUSED, 111, 10061):
+            return True
+        msg = str(exc).lower()
+        if "connect call failed" in msg or "connection refused" in msg:
+            return True
+    cause = getattr(exc, "__cause__", None)
+    if cause and isinstance(cause, BaseException) and cause is not exc:
+        return _is_refused(cause)
+    return False
+
+
+def _log_proxy_error(exc: Exception) -> None:
+    global _last_refused_log
+    now = time.monotonic()
+
+    if _is_refused(exc):
+        in_docker = is_container()
+        if in_docker:
+            if _last_refused_log == 0.0:
+                _last_refused_log = now
+                logger.info("ear proxy: upstream 127.0.0.1:8093 non attivo (in container l'audio e' delegato); log successivi silenziati a debug")
+            else:
+                logger.debug("ear proxy: upstream 127.0.0.1:8093 non raggiungibile: %s", exc)
+        else:
+            if (now - _last_refused_log) >= _REFUSED_COOLDOWN:
+                _last_refused_log = now
+                logger.info("ear proxy: upstream 127.0.0.1:8093 non raggiungibile: %s (avvisi successivi silenziati per %ds)", exc, int(_REFUSED_COOLDOWN))
+            else:
+                logger.debug("ear proxy: upstream 127.0.0.1:8093 non raggiungibile: %s", exc)
+        return
+
+    if isinstance(exc, WebSocketDisconnect):
+        code = getattr(exc, "code", 1000)
+        if code in (1000, 1001) or code is None:
+            logger.debug("ear proxy: disconnessione normale del client (code=%s)", code)
+            return
+
+    logger.info("ear proxy closed: %s", exc)
 
 
 def _node_allowed(socket: WebSocket) -> bool:
@@ -80,11 +136,15 @@ async def proxy(socket: WebSocket) -> None:
         await socket.close(code=DENIED)
         return
     await socket.accept()
+    upstream_refused = False
     try:
         async with websockets.connect(UPSTREAM, max_size=MAX_MESSAGE) as upstream:
             await pump(socket, upstream, device_of(socket))
     except (OSError, websockets.WebSocketException, WebSocketDisconnect, RuntimeError) as exc:
-        logger.info("ear proxy closed: %s", exc)
+        upstream_refused = _is_refused(exc)
+        _log_proxy_error(exc)
+    if upstream_refused:
+        await asyncio.sleep(1.0)
     try:
         await socket.close()
     except RuntimeError:
