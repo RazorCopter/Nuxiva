@@ -326,8 +326,9 @@ def build(admin: bool) -> FastAPI:
             async def serve_admin_master_ui():
                 return FileResponse(str(client_web_dist / "index.html"), headers={"Cache-Control": "no-cache"})
 
-    allowed = f'{env_get("NUXIVA_ALLOWED_HOSTS")},{os.environ.get("NUXIVA_ALLOWED_HOSTS", "")}'
-    app.add_middleware(OriginGuard, extra_hosts=allowed.split(","))
+    allowed_raw = f'{env_get("NUXIVA_ALLOWED_HOSTS")},{os.environ.get("NUXIVA_ALLOWED_HOSTS", "")}'
+    allowed = [h.strip() for h in allowed_raw.split(",") if h.strip()]
+    app.add_middleware(OriginGuard, extra_hosts=allowed)
     return app
 
 

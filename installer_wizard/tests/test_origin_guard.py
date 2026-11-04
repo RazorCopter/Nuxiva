@@ -54,6 +54,35 @@ class OriginGuardTests(unittest.TestCase):
                                                  headers={"Host": "nuxiva.example.org", "Origin": "https://nuxiva.example.org"})
         self.assertEqual(r.status_code, 200)
 
+    def test_reverse_proxy_with_x_forwarded_host_is_trusted(self):
+        r = _client(("jar.ghome.it",)).post(
+            "/api/assistant/chat",
+            json={"text": "ping"},
+            headers={
+                "Host": "10.0.0.105:8444",
+                "X-Forwarded-Host": "jar.ghome.it",
+                "Origin": "https://jar.ghome.it",
+            },
+        )
+        self.assertEqual(r.status_code, 200)
+
+    def test_extra_hosts_with_spaces_urls_and_wildcards(self):
+        r = _client((" jar.ghome.it:443 ", "https://api.ghome.it/test", "*.ghome.it")).get(
+            "/api/ambient",
+            headers={"Host": "service.ghome.it"},
+        )
+        self.assertEqual(r.status_code, 200)
+
+        r2 = _client((" jar.ghome.it:443 ",)).get(
+            "/api/ambient",
+            headers={"Host": "jar.ghome.it"},
+        )
+        self.assertEqual(r2.status_code, 200)
+
+    def test_global_wildcard_host(self):
+        r = _client(("*",)).get("/api/ambient", headers={"Host": "anything.custom.domain"})
+        self.assertEqual(r.status_code, 200)
+
 
 if __name__ == "__main__":
     unittest.main()
