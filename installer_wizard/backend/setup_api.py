@@ -396,7 +396,7 @@ async def setup_voice_greeting_preview(request: Request, _: None = Depends(requi
         raise HTTPException(409, "Voce non ancora installata: la potrai ascoltare tra poco")
     try:
         wav = await asyncio.wait_for(synthesis.speak_with(text, voice, 1.0), timeout=15)
-    except (asyncio.TimeoutError, OSError, RuntimeError) as exc:
+    except Exception as exc:
         raise HTTPException(503, f"Sintesi vocale non riuscita: {str(exc)[:160]}")
     return Response(wav, media_type="audio/wav", headers=NO_CACHE)
 

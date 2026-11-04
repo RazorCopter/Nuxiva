@@ -225,6 +225,17 @@ class WizardTest(unittest.TestCase):
         write_env({"NUXIVA_ASSISTANT_NAME": "Hey NUXIVA"})
         self.assertEqual(read_env().get("NUXIVA_ASSISTANT_NAME"), "Hey NUXIVA")
 
+    def test_voice_greeting_preview_handles_synthesis_failure_gracefully(self):
+        with Network(local=True):
+            with mock.patch("features.voices.synthesis.speak_with", side_effect=RuntimeError("Kokoro non raggiungibile: ConnectError")):
+                r = self.public.post(
+                    "/api/setup/voice_preview",
+                    json={"lang": "it", "gender": "female", "name": "Nuxiva"},
+                    headers=HEADERS
+                )
+                self.assertEqual(r.status_code, 503)
+                self.assertIn("Sintesi vocale non riuscita", r.json().get("detail", ""))
+
 
 if __name__ == "__main__":
     unittest.main()

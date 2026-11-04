@@ -75,11 +75,14 @@ def _sample_rate(voice: str) -> int:
 
 
 async def _kokoro(text: str, voice: str, speed: float) -> bytes:
-    async with httpx.AsyncClient(timeout=45) as client:
-        r = await client.post(f"{KOKORO_URL}/tts", json={"text": text, "voice": voice, "speed": speed})
-    if r.status_code != 200:
-        raise RuntimeError(f"Kokoro: {r.text[:200]}")
-    return r.content
+    try:
+        async with httpx.AsyncClient(timeout=45) as client:
+            r = await client.post(f"{KOKORO_URL}/tts", json={"text": text, "voice": voice, "speed": speed})
+        if r.status_code != 200:
+            raise RuntimeError(f"Kokoro: {r.text[:200]}")
+        return r.content
+    except httpx.HTTPError as exc:
+        raise RuntimeError(f"Kokoro non raggiungibile: {exc}") from exc
 
 
 async def _piper(text: str, voice: str, speed: float) -> bytes:
