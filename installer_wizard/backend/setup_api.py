@@ -1,6 +1,8 @@
 import asyncio
-import hmac, ipaddress, json, os, secrets, time
+import hmac, ipaddress, json, logging, os, secrets, time
 from pathlib import Path
+
+log = logging.getLogger("nuxiva.setup")
 
 import psutil
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -59,6 +61,30 @@ class Guard:
 guard = Guard()
 
 
+def print_setup_banner(code: str) -> None:
+    banner = (
+        "\n"
+        "🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴\n"
+        "🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴\n"
+        "🔴                                                            🔴\n"
+        "🔴        🔑 CODICE PER LA PRIMA CONFIGURAZIONE:             🔴\n"
+        "🔴                                                            🔴\n"
+        f"🔴                 👉👉👉  [  {code}  ]  👈👈👈                  🔴\n"
+        "🔴                                                            🔴\n"
+        "🔴   Inserisci questo codice a 6 cifre nella pagina web       🔴\n"
+        "🔴   di benvenuto per sbloccare Nuxiva da remoto / browser.   🔴\n"
+        "🔴                                                            🔴\n"
+        "🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴\n"
+        "🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴\n"
+    )
+    try:
+        sys.stderr.write(banner + "\n")
+        sys.stderr.flush()
+    except Exception:
+        pass
+    log.warning(banner)
+
+
 def done() -> bool:
     try:
         return bool(json.loads(SETUP_FILE.read_text(encoding="utf-8")).get("done"))
@@ -84,12 +110,13 @@ def reopen(user: str) -> None:
     os.chmod(tmp, 0o600)
     os.replace(tmp, SETUP_FILE)
     guard = Guard()
+    print_setup_banner(guard.code)
     store.event("WARN", f"Configurazione iniziale riaperta da {user}: il display mostra la procedura guidata", "setup")
     store.touch()
 
 
 def _private_client(request: Request) -> bool:
-    if is_local(request):
+    if is_local(request) or machine.is_container():
         return True
     try:
         ip = ipaddress.ip_address(request.client.host if request.client else "")
@@ -102,8 +129,10 @@ def _same_origin(request: Request) -> bool:
     origin = request.headers.get("origin")
     if not origin:
         return True
-    host = request.headers.get("host", "")
-    return origin.split("://", 1)[-1].rstrip("/") == host
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host", "")
+    origin_host = origin.split("://", 1)[-1].split(":", 1)[0].rstrip("/").lower()
+    clean_host = host.split(":", 1)[0].strip().lower()
+    return origin_host == clean_host
 
 
 def setup_required(request: Request) -> bool:

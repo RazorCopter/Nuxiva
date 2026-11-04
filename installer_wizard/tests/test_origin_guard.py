@@ -1,4 +1,5 @@
 import unittest
+from unittest import mock
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -82,6 +83,11 @@ class OriginGuardTests(unittest.TestCase):
     def test_global_wildcard_host(self):
         r = _client(("*",)).get("/api/ambient", headers={"Host": "anything.custom.domain"})
         self.assertEqual(r.status_code, 200)
+
+    def test_container_default_fallback_allows_any_host(self):
+        with mock.patch("machine.is_container", return_value=True):
+            r = _client().get("/api/ambient", headers={"Host": "jar.ghome.it"})
+            self.assertEqual(r.status_code, 200)
 
 
 if __name__ == "__main__":

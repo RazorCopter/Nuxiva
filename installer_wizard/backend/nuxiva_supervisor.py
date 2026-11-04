@@ -492,6 +492,12 @@ async def main() -> None:
         ADMIN_PORT,
         core_info,
     )
+    try:
+        import setup_api
+        if not setup_api.done():
+            setup_api.print_setup_banner(setup_api.guard.code)
+    except Exception as exc:
+        log.warning("Impossibile stampare il banner di setup: %s", exc)
     for name, factory, period in BACKGROUND:
         loop_supervisor.add(name, factory, period)
     tasks = [asyncio.create_task(loop_supervisor.run())]

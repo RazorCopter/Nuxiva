@@ -1,11 +1,15 @@
 import ipaddress
 import json
+import logging
+import os
 import socket
 from collections.abc import Awaitable, Callable, Iterable
 from urllib.parse import urlsplit
 
+log = logging.getLogger("nuxiva.security.origin_guard")
+
 UNSAFE = frozenset({"POST", "PUT", "PATCH", "DELETE"})
-LOOPBACK_NAMES = frozenset({"localhost", "nuxiva.local", "nuxiva"})
+LOOPBACK_NAMES = frozenset({"localhost", "nuxiva.local", "nuxiva", "testserver"})
 
 Scope = dict
 Receive = Callable[[], Awaitable[dict]]
@@ -64,7 +68,17 @@ class OriginGuard:
     def __init__(self, app, extra_hosts: Iterable[str] = ()) -> None:
         self.app = app
         cleaned_extra = {_clean_host(h) for h in extra_hosts if h and _clean_host(h)}
-        self.trusted = LOOPBACK_NAMES | _machine_names() | cleaned_extra
+        self.trusted = set(LOOPBACK_NAMES | _machine_names() | cleaned_extra)
+        allow_all_env = os.environ.get("NUXIVA_ALLOW_ALL_HOSTS", "").lower() in ("1", "true", "yes", "on")
+        is_docker = os.environ.get("NUXIVA_CONTAINER", "").lower() in ("1", "true", "yes", "on")
+        if not is_docker:
+            try:
+                import machine
+                is_docker = bool(machine.is_container())
+            except Exception:
+                pass
+        if allow_all_env or (is_docker and not cleaned_extra):
+            self.trusted.add("*")
 
     def host_allowed(self, host: str) -> bool:
         if not host:
@@ -108,6 +122,21 @@ class OriginGuard:
         if not reason:
             await self.app(scope, receive, send)
             return
+        host = _hostname(_header(scope, b"host"))
+        raw_fwd = _header(scope, b"x-forwarded-host")
+        origin = _header(scope, b"origin")
+        log.warning(
+            "🔴 [ORIGIN GUARD] Rifiutata richiesta HTTP per host non autorizzato (%s):\n"
+            "🔴   Host: %r | X-Forwarded-Host: %r | Origin: %r\n"
+            "🔴   Trusted hosts: %r\n"
+            "🔴   Aggiungi il tuo dominio in NUXIVA_ALLOWED_HOSTS (es. NUXIVA_ALLOWED_HOSTS=%s) nello stack Portainer.",
+            reason,
+            host,
+            raw_fwd,
+            origin,
+            sorted(list(self.trusted)),
+            host or raw_fwd or "jar.ghome.it",
+        )
         body = json.dumps({"detail": "Richiesta rifiutata per sicurezza", "code": f"security.{reason}"}).encode()
         await send({"type": "http.response.start", "status": 403,
                     "headers": [(b"content-type", b"application/json"), (b"content-length", str(len(body)).encode())]})

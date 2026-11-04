@@ -47,7 +47,7 @@ class Orchestrator:
         if await setup_api.apply_answers_file():
             store.event("INFO", "Configurazione applicata dal file di risposte", "setup")
         elif not setup_api.done():
-            log.warning("Codice per la prima configurazione da un altro dispositivo: %s", setup_api.guard.code)
+            setup_api.print_setup_banner(setup_api.guard.code)
 
         if await updater.priority_update("prioritario all'avvio"):
             return
